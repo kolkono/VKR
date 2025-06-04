@@ -5,49 +5,6 @@
 {% block content %}
 <h1>Активные заявки (админ)</h1>
 
-<form method="get" style="margin-bottom: 20px;">
-  <label>Здание:
-    <select name="building">
-      <option value="">Все здания</option>
-      {% for b in buildings %}
-        <option value="{{ b }}" {% if b == selected_building %}selected{% endif %}>{{ b }}</option>
-      {% endfor %}
-    </select>
-  </label>
-
-  <label>Кабинет:
-    <select name="cabinet">
-      <option value="">Все кабинеты</option>
-      {% for c in cabinets %}
-        <option value="{{ c.id }}" {% if c.id|stringformat:"s" == selected_cabinet %}selected{% endif %}>
-          {{ c.building }} - {{ c.number }}
-        </option>
-      {% endfor %}
-    </select>
-  </label>
-
-  <label>Инженер:
-    <select name="engineer">
-      <option value="">Все инженеры</option>
-      {% for e in engineers %}
-        <option value="{{ e.assigned_engineer__id }}" {% if e.assigned_engineer__id|stringformat:"s" == selected_engineer %}selected{% endif %}>
-          {{ e.assigned_engineer__username }}
-        </option>
-      {% endfor %}
-    </select>
-  </label>
-
-  <label>Дата с:
-    <input type="date" name="date_from" value="{{ selected_date_from }}">
-  </label>
-
-  <label>Дата по:
-    <input type="date" name="date_to" value="{{ selected_date_to }}">
-  </label>
-
-  <button type="submit">Фильтровать</button>
-</form>
-
 <table style="width: 100%; border-collapse: collapse;">
   <thead style="background-color: #f0f0f0;">
     <tr>
@@ -86,7 +43,7 @@
             {{ req.obj.service_request.device.cabinet.building }} - {{ req.obj.service_request.device.cabinet.number }}
           </td>
           <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.obj.created_at|date:"d.m.Y H:i" }}</td>
-          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.obj.service_request.created_by.username }}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.obj.created_by.username }}</td>
           <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">Заявка на замену</td>
           <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">
             <a href="{% url 'replacement_request_detail' req.obj.id %}">Просмотр</a>

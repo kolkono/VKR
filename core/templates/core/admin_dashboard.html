@@ -1,41 +1,10 @@
 {% extends 'base.html' %}
 
-{% block title %}Админ дашборд - Сервисная система{% endblock %}
-
 {% block content %}
-<h2>Панель администратора</h2>
+  <h2 style="text-align: center;">Добро пожаловать, {{ user.username }}!</h2>
 
-{% if pending_replacements %}
-  <h3>Заявки на замену устройств, ожидающие одобрения</h3>
-  <ul>
-    {% for replacement in pending_replacements %}
-      <li>
-        Заявка #{{ replacement.id }} по устройству "{{ replacement.service_request.device.name }}" 
-        от инженера {{ replacement.engineer.username }} 
-        <a href="{% url 'replacement_request_detail' replacement.id %}">Подробнее</a>
-      </li>
-    {% endfor %}
-  </ul>
-{% else %}
-  <p>Нет заявок на замену устройств.</p>
-{% endif %}
-
-<hr>
-
-{% if approved_replacements %}
-  <h3>Завершённые заявки на замену устройств</h3>
-  <ul>
-    {% for replacement in approved_replacements %}
-      <li>
-        Заявка #{{ replacement.id }} по устройству "{{ replacement.service_request.device.name }}" 
-        от инженера {{ replacement.engineer.username }} — 
-        <strong>замена подтверждена</strong>
-        <a href="{% url 'replacement_request_detail' replacement.id %}">Подробнее</a>
-      </li>
-    {% endfor %}
-  </ul>
-{% else %}
-  <p>Нет завершённых заявок на замену устройств.</p>
-{% endif %}
-
+  <div class="action-buttons" style="text-align: center;">
+    <a href="{% url 'admin_active_requests' %}" class="btn">Активные заявки</a>
+    <a href="{% url 'admin_completed_requests' %}" class="btn">Завершённые заявки</a>
+  </div>
 {% endblock %}

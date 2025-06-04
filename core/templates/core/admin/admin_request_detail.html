@@ -3,9 +3,6 @@
 {% block title %}Детали заявки №{{ service_request.id }}{% endblock %}
 
 {% block content %}
-<p>ТЕСТ: Шаблон обновлён!</p>
-
-
   <h2>Заявка №{{ service_request.id }}</h2>
 
   <p><strong>Устройство:</strong> {{ service_request.device.name }} ({{ service_request.device.serial_number }})</p>

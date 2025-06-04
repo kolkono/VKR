@@ -258,7 +258,8 @@ def admin_dashboard(request):
 @admin_required
 def replacement_request_detail(request, replacement_id):
     # Получаем запрос на замену, который ещё не одобрен админом
-    replacement_request = get_object_or_404(ReplacementRequest, id=replacement_id, admin_approved=False)
+    replacement_request = get_object_or_404(ReplacementRequest, id=replacement_id)
+
     service_request = replacement_request.service_request
 
     # Получаем логи по связанной сервисной заявке
@@ -312,39 +313,60 @@ def replacement_request_detail(request, replacement_id):
         'logs': logs,
     })
 
+from django.utils.dateparse import parse_date
+
 @login_required
 @admin_required
 def admin_active_requests(request):
-    from django.db.models import Q
+    building = request.GET.get('building')
+    cabinet_id = request.GET.get('cabinet')
+    engineer_id = request.GET.get('engineer')
+    date_from = parse_date(request.GET.get('date_from') or "")
+    date_to = parse_date(request.GET.get('date_to') or "")
 
-    # Только активные заявки на обслуживание
-    service_requests = ServiceRequest.objects.filter(
-        is_completed=False,
-        is_paused=False
-    ).select_related('device__cabinet').order_by('-created_at')
-
-    # Только замены, где заявка на обслуживание приостановлена, назначен инженер, и она не завершена
     replacement_requests = ReplacementRequest.objects.filter(
+        admin_approved=False,
         service_request__is_paused=True,
         service_request__assigned_engineer__isnull=False,
         service_request__is_completed=False
-    ).select_related('service_request__device__cabinet').order_by('-created_at')
+    ).select_related('service_request__device__cabinet', 'service_request__assigned_engineer')
 
-    # Оборачиваем объекты для шаблона
-    wrapped_service_requests = [{'obj': r, 'type': 'service_request'} for r in service_requests]
+    if building:
+        replacement_requests = replacement_requests.filter(service_request__device__cabinet__building=building)
+    if cabinet_id:
+        replacement_requests = replacement_requests.filter(service_request__device__cabinet__id=cabinet_id)
+    if engineer_id:
+        replacement_requests = replacement_requests.filter(service_request__assigned_engineer__id=engineer_id)
+    if date_from:
+        replacement_requests = replacement_requests.filter(created_at__date__gte=date_from)
+    if date_to:
+        replacement_requests = replacement_requests.filter(created_at__date__lte=date_to)
+
     wrapped_replacement_requests = [{'obj': r, 'type': 'replacement_request'} for r in replacement_requests]
 
-    # Объединяем и сортируем по дате
-    all_active_requests = sorted(
-        wrapped_service_requests + wrapped_replacement_requests,
-        key=lambda x: x['obj'].created_at,
-        reverse=True
+    buildings = Cabinet.objects.values_list('building', flat=True).distinct()
+    cabinets = Cabinet.objects.all()
+    engineers = (
+        ServiceRequest.objects.filter(assigned_engineer__isnull=False)
+        .values('assigned_engineer__id', 'assigned_engineer__username')
+        .distinct()
     )
 
     return render(request, 'core/admin_active_requests.html', {
-        'requests': all_active_requests,
+        'requests': wrapped_replacement_requests,
         'user_name': request.user.username,
+        'buildings': buildings,
+        'cabinets': cabinets,
+        'engineers': engineers,
+        'selected_building': building,
+        'selected_cabinet': cabinet_id,
+        'selected_engineer': engineer_id,
+        'selected_date_from': request.GET.get('date_from', ''),
+        'selected_date_to': request.GET.get('date_to', ''),
     })
+
+
+
 
 
 
@@ -384,13 +406,10 @@ def admin_completed_requests(request):
 @login_required
 @admin_required
 def admin_request_detail(request, request_id):
-    # Получаем сервисную заявку по ID
     service_request = get_object_or_404(ServiceRequest, id=request_id)
 
-    # Получаем логи по заявке через related_name service_logs
     logs = service_request.service_logs.select_related('engineer').order_by('-action_date')
 
-    # Пытаемся получить связанную заявку на замену (если есть)
     replacement_request = ReplacementRequest.objects.filter(service_request=service_request).first()
 
     report = None
@@ -401,12 +420,13 @@ def admin_request_detail(request, request_id):
             report = None
 
     context = {
-        'request': service_request,
+        'service_request': service_request,
         'logs': logs,
         'replacement_request': replacement_request,
         'replacement_report': report,
     }
     return render(request, 'core/admin_request_detail.html', context)
+
 
 
 @login_required
@@ -536,7 +556,7 @@ def all_active_requests(request):
     if status == 'new':
         qs = qs.filter(assigned_engineer__isnull=True, is_paused=False)
     elif status == 'in_progress':
-        qs = qs.filter(assigned_engineer__isnull=False, is_paused=False)
+        qs = qs.filter(is_completed=False, is_paused=False, assigned_engineer__isnull=False)
     elif status == 'paused':
         qs = qs.filter(is_paused=True)
     elif status == 'completed':
