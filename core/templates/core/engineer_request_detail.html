@@ -40,16 +40,8 @@
     <button type="submit" name="submit_log">Добавить запись</button>
   </form>
 
-  <hr>
-
-  {% if not replacement_request %}
-    <h3>Запросить замену устройства</h3>
-    <form method="post">
-      {% csrf_token %}
-      {{ form_replacement.as_p }}
-      <button type="submit" name="replacement_request">Отправить запрос на замену</button>
-    </form>
-  {% else %}
+  {% if replacement_request %}
+    <hr>
     <h3>Запрос на замену устройства отправлен</h3>
     <p><strong>Причина замены:</strong> {{ replacement_request.reason }}</p>
   {% endif %}
