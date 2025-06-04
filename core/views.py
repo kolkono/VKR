@@ -127,17 +127,15 @@ def engineer_request_detail(request, request_id):
 
         # Обработка запроса на замену оборудования с комментарием
         elif 'replacement_request' in request.POST:
-            # Используем ServiceLogForm для комментария + галочку замены
             form_log = ServiceLogForm(request.POST)
             if form_log.is_valid():
-                # Сохраняем комментарий с отметкой о запросе замены
                 log = form_log.save(commit=False)
                 log.request = service_request
                 log.engineer = request.user
                 log.save()
 
-                # Если стоит галочка "отправить запрос на замену"
-                if 'send_replacement_request' in request.POST or form_log.cleaned_data.get('complete_request'):
+                # Проверяем, стоит ли галочка "Отправить запрос на замену оборудования"
+                if form_log.cleaned_data.get('replacement_request'):
                     if not replacement_request:
                         replacement_request = ReplacementRequest.objects.create(
                             service_request=service_request,
@@ -147,11 +145,16 @@ def engineer_request_detail(request, request_id):
                         )
                     else:
                         replacement_request.reason = log.notes
-                        replacement_request.admin_approved = False  # сбрасываем статус, если заново отправили
+                        replacement_request.admin_approved = False
                         replacement_request.save()
 
                     service_request.requires_replacement = True
-                    service_request.is_paused = True  # ставим паузу на заявку
+                    service_request.is_paused = True  # Ставим паузу на заявку
+                    service_request.save()
+
+                # Также проверяем, если галочка "Завершить заявку" стоит одновременно
+                if form_log.cleaned_data.get('complete_request'):
+                    service_request.is_completed = True
                     service_request.save()
 
                 return redirect('engineer_request_detail', request_id=request_id)
@@ -164,7 +167,6 @@ def engineer_request_detail(request, request_id):
                 report.replacement_request = replacement_request
                 report.save()
 
-                # Завершаем заявку и снимаем паузу
                 service_request.is_completed = True
                 service_request.is_paused = False
                 service_request.save()
