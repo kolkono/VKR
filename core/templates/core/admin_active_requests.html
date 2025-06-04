@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Активные заявки (админ){% endblock %}
+
+{% block content %}
+<h1>Активные заявки (админ)</h1>
+
+<table style="width: 100%; border-collapse: collapse;">
+  <thead style="background-color: #f0f0f0;">
+    <tr>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">ID</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Устройство</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Кабинет</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Дата создания</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Создал</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Статус</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Действия</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for req in requests %}
+      {% if req.type == 'service_request' %}
+        <tr>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.obj.id }}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.obj.device.name }}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">
+            {{ req.obj.device.cabinet.building }} - {{ req.obj.device.cabinet.number }}
+          </td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.obj.created_at|date:"d.m.Y H:i" }}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.obj.created_by.username }}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">
+            {% if req.obj.is_paused %}Приостановлена{% else %}Активна{% endif %}
+          </td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">
+            <a href="{% url 'admin_request_detail' req.obj.id %}">Просмотр</a>
+          </td>
+        </tr>
+      {% elif req.type == 'replacement_request' %}
+        <tr>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.obj.id }}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.obj.service_request.device.name }}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">
+            {{ req.obj.service_request.device.cabinet.building }} - {{ req.obj.service_request.device.cabinet.number }}
+          </td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.obj.created_at|date:"d.m.Y H:i" }}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.obj.created_by.username }}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">Заявка на замену</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">
+            <a href="{% url 'replacement_request_detail' req.obj.id %}">Просмотр</a>
+          </td>
+        </tr>
+      {% endif %}
+    {% empty %}
+      <tr>
+        <td colspan="7" style="border: 1px solid #ccc; padding: 8px; text-align: center;">Нет активных заявок</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

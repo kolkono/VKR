@@ -3,6 +3,7 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
+    # Главная и профиль
     path('', views.home, name='home'),
     path('profile/', views.profile_view, name='profile'),
 
@@ -17,9 +18,17 @@ urlpatterns = [
     path('active-requests/', views.active_requests, name='active_requests'),
     path('completed-requests/', views.completed_requests, name='completed_requests'),
 
-    # Админка (пользовательская, не Django admin)
+    # Админка — единый префикс /dashboard/admin/
     path('dashboard/admin/', views.admin_dashboard, name='admin_dashboard'),
-    path('admin-panel/replacement/<int:replacement_id>/', views.replacement_request_detail, name='replacement_request_detail'),
+    path('dashboard/admin/replacement/<int:replacement_id>/', views.replacement_request_detail, name='replacement_request_detail'),
+    path('dashboard/admin/request/<int:request_id>/', views.admin_request_detail, name='admin_request_detail'),
+    path('dashboard/admin/replacement-requests/', views.admin_replacement_requests, name='admin_replacement_requests'),
+    path('dashboard/admin/replacement-requests/<int:request_id>/approve/', views.admin_approve_replacement, name='admin_approve_replacement'),
+    path('dashboard/admin/replacement-requests/<int:request_id>/reject/', views.admin_reject_replacement, name='admin_reject_replacement'),
+
+    # *** Новые маршруты для активных и завершённых заявок админа ***
+    path('dashboard/admin/active/', views.admin_active_requests, name='admin_active_requests'),
+    path('dashboard/admin/completed/', views.admin_completed_requests, name='admin_completed_requests'),
 
     # API
     path('api/devices/', views.devices_api, name='devices_api'),
@@ -27,8 +36,4 @@ urlpatterns = [
     # Аутентификация
     path('login/', auth_views.LoginView.as_view(template_name='core/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
-
-    path('admin-panel/replacement-requests/', views.admin_replacement_requests, name='admin_replacement_requests'),
-    path('admin-panel/replacement-requests/<int:request_id>/approve/', views.admin_approve_replacement, name='admin_approve_replacement'),
-    path('admin-panel/replacement-requests/<int:request_id>/reject/', views.admin_reject_replacement, name='admin_reject_replacement'),
 ]

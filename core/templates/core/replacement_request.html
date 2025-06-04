@@ -12,22 +12,26 @@
 
   <hr>
 
-  <h3>Журнал действий инженера</h3>
-  {% if logs %}
-    <ul>
-      {% for log in logs %}
-        <li>
-          <strong>{{ log.action_type }}</strong><br>
-          {% if log.notes %}
-            Примечание: {{ log.notes }}<br>
-          {% endif %}
-          <small>Дата: {{ log.action_date|date:"d.m.Y H:i" }}, Инженер: {{ log.engineer.username }}</small>
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p>Нет записей в журнале.</p>
-  {% endif %}
+<h3>Журнал действий</h3>
+{% if logs %}
+  <ul>
+    {% for log in logs %}
+      <li>
+        <strong>{{ log.action_type }}</strong><br>
+        {% if log.notes %}
+          Примечание: {{ log.notes }}<br>
+        {% endif %}
+        <small>
+          Дата: {{ log.action_date|date:"d.m.Y H:i" }},
+          Пользователь: {{ log.engineer.username }}
+        </small>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>Нет записей в журнале.</p>
+{% endif %}
+
 
   <hr>
 

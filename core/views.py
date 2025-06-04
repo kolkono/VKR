@@ -199,24 +199,42 @@ def engineer_request_detail(request, request_id):
 
 
 
+
 @login_required
 @admin_required
 def admin_dashboard(request):
-    pending_replacements = ReplacementRequest.objects.filter(admin_approved=False).select_related(
+    # Активные (ожидающие одобрения) заявки на замену
+    pending_replacements = ReplacementRequest.objects.filter(
+        admin_approved=False
+    ).select_related(
         'service_request', 'engineer', 'service_request__device'
     ).order_by('-created_at')
 
+    # Завершённые (одобренные) заявки на замену
+    approved_replacements = ReplacementRequest.objects.filter(
+        admin_approved=True
+    ).select_related(
+        'service_request', 'engineer', 'service_request__device'
+    ).order_by('-approved_at')
+
     return render(request, 'core/admin_dashboard.html', {
         'pending_replacements': pending_replacements,
+        'approved_replacements': approved_replacements,
         'user_name': request.user.username,
     })
+
 
 @login_required
 @admin_required
 def replacement_request_detail(request, replacement_id):
+    # Получаем запрос на замену, который ещё не одобрен админом
     replacement_request = get_object_or_404(ReplacementRequest, id=replacement_id, admin_approved=False)
     service_request = replacement_request.service_request
 
+    # Получаем логи по связанной сервисной заявке
+    logs = ServiceLog.objects.filter(request=service_request).order_by('-action_date')
+
+    # Получаем отчёт по замене, если есть
     try:
         report_instance = DeviceReplacementReport.objects.get(replacement_request=replacement_request)
     except DeviceReplacementReport.DoesNotExist:
@@ -230,11 +248,24 @@ def replacement_request_detail(request, replacement_id):
             report.created_by = request.user
             report.save()
 
-            # Одобряем запрос замены
+            # Добавляем запись в журнал сервиса
+            ServiceLog.objects.create(
+                request=service_request,
+                engineer=request.user,
+                action_type="Замена подтверждена",
+                notes=(
+                    f"Администратор {request.user.username} подтвердил замену. "
+                    f"Новое устройство: {report.new_device_name}, "
+                    f"Серийный номер: {report.new_device_serial_number}, "
+                    f"Стоимость: {report.new_device_cost}."
+                )
+            )
+
+            # Помечаем запрос как одобренный
             replacement_request.admin_approved = True
             replacement_request.save()
 
-            # Снимаем паузу и требование замены
+            # Обновляем состояние сервисной заявки
             service_request.requires_replacement = False
             service_request.is_paused = False
             service_request.save()
@@ -248,15 +279,88 @@ def replacement_request_detail(request, replacement_id):
         'replacement_request': replacement_request,
         'service_request': service_request,
         'form': form,
+        'logs': logs,
     })
-    
-    
+
+@login_required
+@admin_required
+def admin_active_requests(request):
+    from django.db.models import Q
+
+    # Только активные заявки на обслуживание
+    service_requests = ServiceRequest.objects.filter(
+        is_completed=False,
+        is_paused=False
+    ).select_related('device__cabinet').order_by('-created_at')
+
+    # Только замены, где заявка на обслуживание приостановлена, назначен инженер, и она не завершена
+    replacement_requests = ReplacementRequest.objects.filter(
+        service_request__is_paused=True,
+        service_request__assigned_engineer__isnull=False,
+        service_request__is_completed=False
+    ).select_related('service_request__device__cabinet').order_by('-created_at')
+
+    # Оборачиваем объекты для шаблона
+    wrapped_service_requests = [{'obj': r, 'type': 'service_request'} for r in service_requests]
+    wrapped_replacement_requests = [{'obj': r, 'type': 'replacement_request'} for r in replacement_requests]
+
+    # Объединяем и сортируем по дате
+    all_active_requests = sorted(
+        wrapped_service_requests + wrapped_replacement_requests,
+        key=lambda x: x['obj'].created_at,
+        reverse=True
+    )
+
+    return render(request, 'core/admin_active_requests.html', {
+        'requests': all_active_requests,
+        'user_name': request.user.username,
+    })
+
+
+
+
+@login_required
+@admin_required
+def admin_completed_requests(request):
+    # Заявки на замену, которые одобрены админом и имеют отчёт о замене
+    completed_requests = ReplacementRequest.objects.filter(
+        admin_approved=True,
+        devicereplacementreport__isnull=False
+    ).select_related('service_request__device__cabinet').order_by('-created_at')
+
+    # Фильтрация по зданию и кабинету
+    building = request.GET.get('building')
+    cabinet_id = request.GET.get('cabinet')
+
+    if building:
+        completed_requests = completed_requests.filter(service_request__device__cabinet__building=building)
+    if cabinet_id:
+        completed_requests = completed_requests.filter(service_request__device__cabinet__id=cabinet_id)
+
+    buildings = Cabinet.objects.values_list('building', flat=True).distinct()
+    cabinets = Cabinet.objects.all()
+
+    return render(request, 'core/admin_completed_requests.html', {
+        'requests': completed_requests,
+        'buildings': buildings,
+        'cabinets': cabinets,
+        'selected_building': building,
+        'selected_cabinet': cabinet_id,
+        'user_name': request.user.username,
+    })
+
+
+
 @login_required
 @admin_required
 def admin_request_detail(request, request_id):
+    # Получаем сервисную заявку по ID
     service_request = get_object_or_404(ServiceRequest, id=request_id)
+
+    # Получаем логи по заявке через related_name service_logs
     logs = service_request.service_logs.select_related('engineer').order_by('-action_date')
 
+    # Пытаемся получить связанную заявку на замену (если есть)
     replacement_request = ReplacementRequest.objects.filter(service_request=service_request).first()
 
     report = None
