@@ -132,7 +132,7 @@
         <h1>Сервисная система</h1>
         <nav>
           {% if user.is_authenticated %}
-            <span>Привет, {{ user.username }}!</span>
+            <span>Привет, <a href="{% url 'profile' %}">{{ user.username }}</a>!</span>
 
             {% if user.role == 'teacher' %}
               <a href="{% url 'create_request' %}" class="{% if request.path == '/create-request/' %}active{% endif %}">Создать заявку</a>

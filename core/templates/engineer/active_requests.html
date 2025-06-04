@@ -3,13 +3,40 @@
 
 {% block content %}
 <h2>Активные заявки</h2>
-<ul>
-  {% for req in requests %}
-    <li>
-      <a href="{% url 'request_detail' req.id %}">Заявка №{{ req.id }}</a> — {{ req.device.name }} ({{ req.device.serial_number }})
-    </li>
-  {% empty %}
-    <p>Нет активных заявок.</p>
-  {% endfor %}
-</ul>
+
+{% if requests %}
+<table style="width: 100%; border-collapse: collapse;">
+  <thead style="background-color: #f0f0f0;">
+    <tr>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">№</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Корпус</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Аудитория</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Устройство</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Серийный номер</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Дата заявки</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Статус</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Подробнее</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for req in requests %}
+    <tr>
+      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.id }}</td>
+      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.device.cabinet.building }}</td>
+      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.device.cabinet.number }}</td>
+      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.device.name }}</td>
+      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.device.serial_number }}</td>
+      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.created_at|date:"d.m.Y H:i" }}</td>
+      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.status }}</td>
+      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">
+        <a href="{% url 'engineer_request_detail' req.id %}">Открыть</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  <p>Нет активных заявок.</p>
+{% endif %}
+
 {% endblock %}

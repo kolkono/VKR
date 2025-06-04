@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.conf import settings
 
+
 class User(AbstractUser):
     ROLE_CHOICES = [
         ('admin', 'Администратор'),
@@ -51,6 +52,8 @@ class ServiceRequest(models.Model):
     created_at = models.DateTimeField("Дата создания", auto_now_add=True)
     description = models.TextField("Описание проблемы")
     is_completed = models.BooleanField("Завершено", default=False)
+    requires_replacement = models.BooleanField(default=False)
+    is_paused = models.BooleanField("Приостановлена (ожидание замены)", default=False)
 
     class Meta:
         verbose_name = "Заявка на обслуживание"
@@ -86,7 +89,7 @@ class ServiceLog(models.Model):
 class ReplacementRequest(models.Model):
     service_request = models.OneToOneField(ServiceRequest, on_delete=models.CASCADE, related_name='replacement_request')
     engineer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    reason = models.TextField("Причина замены", blank=True)
+    reason = models.TextField("Причина замены", blank=True, null=True)  # Здесь хранится причина замены
     created_at = models.DateTimeField(auto_now_add=True)
     admin_approved = models.BooleanField("Одобрено администратором", default=False)
 

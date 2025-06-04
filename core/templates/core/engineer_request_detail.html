@@ -30,25 +30,28 @@
   <p>Нет записей в журнале.</p>
 {% endif %}
 
-
-
 <hr>
 
 {% if not request.is_completed %}
   <h3>Добавить запись в журнал</h3>
   <form method="post">
     {% csrf_token %}
-    {{ form.as_p }}
+    {{ form_log.as_p }}
     <button type="submit" name="submit_log">Добавить запись</button>
   </form>
 
+  <hr>
+
   {% if not replacement_request %}
-    <form method="post" style="margin-top: 20px;">
+    <h3>Запросить замену устройства</h3>
+    <form method="post">
       {% csrf_token %}
-      <button type="submit" name="replacement_request">Запросить замену устройства</button>
+      {{ form_replacement.as_p }}
+      <button type="submit" name="replacement_request">Отправить запрос на замену</button>
     </form>
   {% else %}
-    <p><strong>Запрос на замену устройства отправлен.</strong></p>
+    <h3>Запрос на замену устройства отправлен</h3>
+    <p><strong>Причина замены:</strong> {{ replacement_request.reason }}</p>
   {% endif %}
 {% else %}
   <p><em>Заявка выполнена.</em></p>

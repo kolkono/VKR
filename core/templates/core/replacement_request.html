@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Запрос замены устройства №{{ replacement_request.id }}{% endblock %}
+
+{% block content %}
+  <h2>Запрос замены устройства №{{ replacement_request.id }}</h2>
+
+  <p><strong>Устройство:</strong> {{ service_request.device.name }} ({{ service_request.device.serial_number }})</p>
+  <p><strong>Инженер:</strong> {{ replacement_request.engineer.username }}</p>
+  <p><strong>Дата запроса:</strong> {{ replacement_request.created_at|date:"d.m.Y H:i" }}</p>
+  <p><strong>Причина замены:</strong> {{ replacement_request.reason|linebreaks }}</p>
+
+  <hr>
+
+  <h3>Журнал действий инженера</h3>
+  {% if logs %}
+    <ul>
+      {% for log in logs %}
+        <li>
+          <strong>{{ log.action_type }}</strong><br>
+          {% if log.notes %}
+            Примечание: {{ log.notes }}<br>
+          {% endif %}
+          <small>Дата: {{ log.action_date|date:"d.m.Y H:i" }}, Инженер: {{ log.engineer.username }}</small>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>Нет записей в журнале.</p>
+  {% endif %}
+
+  <hr>
+
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Подтвердить замену и закрыть заявку</button>
+  </form>
+
+  <a href="{% url 'admin_dashboard' %}">← Назад в панель администратора</a>
+{% endblock %}

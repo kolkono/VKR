@@ -3,13 +3,61 @@
 
 {% block content %}
 <h2>Завершённые заявки</h2>
-<ul>
-  {% for req in requests %}
-    <li>
-      <a href="{% url 'request_detail' req.id %}">Заявка №{{ req.id }}</a> — {{ req.device.name }} ({{ req.device.serial_number }})
-    </li>
-  {% empty %}
-    <p>Нет завершённых заявок.</p>
-  {% endfor %}
-</ul>
+
+<form method="get" action="" style="margin-bottom: 20px;">
+  <label for="building">Корпус:</label>
+  <select name="building" id="building" onchange="this.form.submit()">
+    <option value="">Все</option>
+    {% for b in buildings %}
+      <option value="{{ b }}" {% if b == selected_building %}selected{% endif %}>{{ b }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="cabinet">Аудитория:</label>
+  <select name="cabinet" id="cabinet" onchange="this.form.submit()">
+    <option value="">Все</option>
+    {% for c in cabinets %}
+      <option value="{{ c.id }}" {% if c.id|stringformat:"s" == selected_cabinet %}selected{% endif %}>
+        {{ c.building }} - {{ c.number }}
+      </option>
+    {% endfor %}
+  </select>
+  <noscript><button type="submit">Фильтровать</button></noscript>
+</form>
+
+{% if requests %}
+<table style="width: 100%; border-collapse: collapse;">
+  <thead style="background-color: #f0f0f0;">
+    <tr>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">№</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Корпус</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Аудитория</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Устройство</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Серийный номер</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Дата заявки</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Статус</th>
+      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Подробнее</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for req in requests %}
+    <tr>
+      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.id }}</td>
+      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.device.cabinet.building }}</td>
+      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.device.cabinet.number }}</td>
+      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.device.name }}</td>
+      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.device.serial_number }}</td>
+      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.created_at|date:"d.m.Y H:i" }}</td>
+      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.status }}</td>
+      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">
+        <a href="{% url 'engineer_request_detail' req.id %}">Открыть</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  <p>Нет завершённых заявок.</p>
+{% endif %}
+
 {% endblock %}

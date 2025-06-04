@@ -14,17 +14,22 @@ class ServiceRequestForm(forms.ModelForm):
         }
 
 class ServiceLogForm(forms.ModelForm):
-    complete_request = forms.BooleanField(required=False, label="Завершить заявку")
+    complete_request = forms.BooleanField(
+        required=False,
+        label="Завершить заявку"
+    )
+    replacement_request = forms.BooleanField(
+        required=False,
+        label="Отправить запрос на замену оборудования"
+    )
 
     class Meta:
         model = ServiceLog
-        fields = ['action_type', 'notes']  # обязательно поле note
+        fields = ['action_type', 'notes']  # обязательно поле notes
         widgets = {
             'notes': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Введите примечание...'}),
             'action_type': forms.TextInput(attrs={'placeholder': 'Тип действия'}),
         }
-        
-
 
 class ReplacementRequestForm(forms.ModelForm):
     class Meta:
@@ -36,7 +41,6 @@ class ReplacementRequestForm(forms.ModelForm):
         labels = {
             'reason': 'Причина замены',
         }
-
 
 class DeviceReplacementReportForm(forms.ModelForm):
     class Meta:
