@@ -5,6 +5,32 @@
 {% block content %}
   <h2>Мои заявки</h2>
 
+  <form method="get" style="margin-bottom: 20px;">
+    <label style="margin-right: 15px;">
+      Корпус:
+      <select name="building">
+        <option value="">Все</option>
+        {% for b in buildings %}
+          <option value="{{ b }}" {% if b == selected_building %}selected{% endif %}>{{ b }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label style="margin-right: 15px;">
+      Аудитория:
+      <select name="cabinet">
+        <option value="">Все</option>
+        {% for c in cabinets %}
+          <option value="{{ c.id }}" {% if c.id|stringformat:"s" == selected_cabinet %}selected{% endif %}>
+            {{ c.number }} ({{ c.building }})
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <button type="submit" class="btn">Фильтровать</button>
+  </form>
+
   {% if requests %}
     <table style="width: 100%; border-collapse: collapse; border: 1px solid #ccc;">
       <thead>

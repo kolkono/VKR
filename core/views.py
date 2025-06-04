@@ -19,17 +19,37 @@ def home(request):
     if request.user.role == 'engineer':
         return redirect('engineer_dashboard')
     elif request.user.role == 'teacher':
-        return redirect('my_requests')
+        return redirect('teacher_dashboard')  # ✅ сюда!
     elif request.user.role == 'admin':
         return redirect('admin_dashboard')
-    else:
-        return render(request, 'core/home.html', {'user_name': request.user.username})
+
 
 @login_required
 @teacher_required
 def my_requests(request):
-    requests = ServiceRequest.objects.filter(created_by=request.user).order_by('-created_at')
-    return render(request, 'core/my_requests.html', {'requests': requests, 'user_name': request.user.username})
+    qs = ServiceRequest.objects.filter(created_by=request.user).select_related('device__cabinet').order_by('-created_at')
+
+    # Фильтры
+    building = request.GET.get('building')
+    cabinet_id = request.GET.get('cabinet')
+
+    if building:
+        qs = qs.filter(device__cabinet__building=building)
+    if cabinet_id:
+        qs = qs.filter(device__cabinet__id=cabinet_id)
+
+    buildings = Cabinet.objects.values_list('building', flat=True).distinct()
+    cabinets = Cabinet.objects.all()
+
+    return render(request, 'core/my_requests.html', {
+        'requests': qs,
+        'buildings': buildings,
+        'cabinets': cabinets,
+        'selected_building': building,
+        'selected_cabinet': cabinet_id,
+        'user_name': request.user.username,
+    })
+
 
 @login_required
 @teacher_required

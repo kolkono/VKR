@@ -1,16 +1,10 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-5 text-center">
-    <h2 class="mb-4">Добро пожаловать, {{ user.first_name }}!</h2>
+<h2 style="text-align:center;">Добро пожаловать, {{ user.first_name|default:user.username }}!</h2>
 
-    <div class="d-flex justify-content-center gap-3">
-        <a href="{% url 'create_request' %}" class="btn btn-primary btn-lg px-4">
-            Создать новую заявку
-        </a>
-        <a href="{% url 'my_requests' %}" class="btn btn-outline-secondary btn-lg px-4">
-            Мои заявки
-        </a>
-    </div>
+<div class="action-buttons">
+    <a href="{% url 'create_request' %}" class="btn">Создать новую заявку</a>
+    <a href="{% url 'my_requests' %}" class="btn">Мои заявки</a>
 </div>
 {% endblock %}
