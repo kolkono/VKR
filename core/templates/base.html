@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <title>{% block title %}Сервисная система{% endblock %}</title>
     <style>
+      /* [Стили остаются без изменений — см. твой код] */
       body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         background-color: #f9faff;
@@ -63,7 +64,6 @@
         background-color: #f1f1f1;
         margin-top: 40px;
       }
-      /* Новые стили для кнопок действия на главной */
       .action-buttons {
         margin-top: 20px;
         text-align: center;
@@ -85,7 +85,6 @@
         background-color: #005fa3;
         box-shadow: 0 6px 12px rgba(0,95,163,0.3);
       }
-      /* Стили для textarea */
       textarea, .styled-textarea {
         width: 100%;
         min-height: 120px;
@@ -103,13 +102,11 @@
         outline: none;
         box-shadow: 0 0 8px rgba(0,122,204,0.3);
       }
-      /* Жирный текст для заголовка "Выберите действие" */
       .bold-text {
         font-weight: 700;
         font-size: 18px;
         margin-top: 20px;
       }
-      /* Стили для кнопки выхода */
       form.logout-form {
         display: inline;
       }
@@ -136,6 +133,17 @@
         <nav>
           {% if user.is_authenticated %}
             <span>Привет, {{ user.username }}!</span>
+
+            {% if user.role == 'teacher' %}
+              <a href="{% url 'create_request' %}" class="{% if request.path == '/create-request/' %}active{% endif %}">Создать заявку</a>
+              <a href="{% url 'my_requests' %}" class="{% if request.path == '/my-requests/' %}active{% endif %}">Мои заявки</a>
+            {% elif user.role == 'engineer' %}
+              <a href="{% url 'active_requests' %}" class="{% if request.path == '/active-requests/' %}active{% endif %}">Активные заявки</a>
+              <a href="{% url 'completed_requests' %}" class="{% if request.path == '/completed-requests/' %}active{% endif %}">Завершённые заявки</a>
+            {% elif user.role == 'admin' %}
+              <a href="{% url 'admin_dashboard' %}" class="{% if request.path == '/admin/' %}active{% endif %}">Панель администратора</a>
+            {% endif %}
+
             <form method="post" action="{% url 'logout' %}" class="logout-form">
               {% csrf_token %}
               <button type="submit">Выйти</button>
@@ -145,10 +153,6 @@
               <a href="{% url 'login' %}">Войти</a>
             {% endif %}
           {% endif %}
-
-          <a href="/" class="{% if request.path == '/' %}active{% endif %}">Главная</a>
-          <a href="/create-request/" class="{% if request.path == '/create-request/' %}active{% endif %}">Создать заявку</a>
-          <a href="/my-requests/" class="{% if request.path == '/my-requests/' %}active{% endif %}">Мои заявки</a>
         </nav>
     </header>
 

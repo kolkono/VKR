@@ -36,7 +36,15 @@
               {% endif %}
             </td>
             <td style="border: 1px solid #ccc; padding: 10px;">
-              <a href="{% url 'engineer_request_detail' request.id %}" style="color: #007acc; font-weight: 500;">Открыть</a>
+              {% if not request.assigned_engineer %}
+                <a href="{% url 'assign_request_to_self' request.id %}" 
+                   style="background-color: #007acc; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px;">
+                  Взять в работу
+                </a>
+              {% else %}
+                <a href="{% url 'engineer_request_detail' request.id %}" style="color: #007acc; font-weight: 500;">Открыть</a><br>
+                <small>Назначен: {{ request.assigned_engineer.username }}</small>
+              {% endif %}
             </td>
           </tr>
           {% endfor %}
@@ -44,7 +52,7 @@
       </table>
     </div>
   {% else %}
-    <p>Нет заявок, назначенных вам.</p>
+    <p>Нет заявок, назначенных вам или доступных для взятия.</p>
   {% endif %}
 </div>
 {% endblock %}

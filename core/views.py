@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.contrib import messages
 from .models import ServiceRequest, Cabinet, Device, ServiceLog, ReplacementRequest
 from .forms import ServiceRequestForm, ServiceLogForm, DeviceReplacementReportForm
 from .decorators import teacher_required, engineer_required, admin_required
@@ -75,10 +76,28 @@ def engineer_dashboard(request):
         is_completed=False
     ).select_related('device__cabinet').order_by('-created_at')
 
+    unassigned_requests = ServiceRequest.objects.filter(
+        assigned_engineer__isnull=True,
+        is_completed=False
+    ).select_related('device__cabinet').order_by('-created_at')
+
+    # Объединяем в один список
+    requests = list(assigned_requests) + list(unassigned_requests)
+
     return render(request, 'core/engineer_dashboard.html', {
-        'requests': assigned_requests,
+        'requests': requests,
         'user_name': request.user.username,
     })
+
+
+@login_required
+@engineer_required
+def assign_request_to_self(request, request_id):
+    service_request = get_object_or_404(ServiceRequest, id=request_id, assigned_engineer__isnull=True)
+    service_request.assigned_engineer = request.user
+    service_request.save()
+    messages.success(request, f'Вы взяли заявку #{service_request.id} в работу.')
+    return redirect('engineer_dashboard')
 
 
 @login_required
@@ -159,3 +178,18 @@ def replacement_request_detail(request, replacement_id):
         'service_request': service_request,
         'form': form,
     })
+
+
+@login_required
+def active_requests(request):
+    if request.user.role != 'engineer':
+        return redirect('login')
+    requests = ServiceRequest.objects.filter(assigned_engineer=request.user, is_completed=False)
+    return render(request, 'engineer/active_requests.html', {'requests': requests})
+
+@login_required
+def completed_requests(request):
+    if request.user.role != 'engineer':
+        return redirect('login')
+    requests = ServiceRequest.objects.filter(assigned_engineer=request.user, is_completed=True)
+    return render(request, 'engineer/completed_requests.html', {'requests': requests})

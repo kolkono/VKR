@@ -18,12 +18,12 @@ class ServiceLogForm(forms.ModelForm):
 
     class Meta:
         model = ServiceLog
-        fields = ['action_type', 'notes', 'cost']
+        fields = ['action_type', 'notes']  # обязательно поле note
         widgets = {
-            'notes': forms.Textarea(attrs={'rows': 3}),
+            'notes': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Введите примечание...'}),
             'action_type': forms.TextInput(attrs={'placeholder': 'Тип действия'}),
-            'cost': forms.NumberInput(attrs={'step': '0.01'}),
         }
+        
 
 
 class ReplacementRequestForm(forms.ModelForm):

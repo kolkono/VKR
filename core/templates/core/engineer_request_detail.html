@@ -17,13 +17,20 @@
   <ul>
     {% for log in logs %}
       <li>
-        <strong>{{ log.action_date|date:"d.m.Y H:i" }}</strong> - {{ log.description }} ({{ log.engineer.username }})
+        <strong>{{ log.action_type }}</strong><br>
+        {% if log.notes %}
+          Примечание: {{ log.notes }}<br>
+        {% endif %}
+        Инженер: {{ log.engineer.username }}<br>
+        <small><em>{{ log.action_date|date:"d.m.Y H:i" }}</em></small>
       </li>
     {% endfor %}
   </ul>
 {% else %}
   <p>Нет записей в журнале.</p>
 {% endif %}
+
+
 
 <hr>
 
@@ -33,7 +40,6 @@
     {% csrf_token %}
     {{ form.as_p }}
     <button type="submit" name="submit_log">Добавить запись</button>
-    <button type="submit" name="complete_request" style="margin-left: 10px;">Отметить как выполненную</button>
   </form>
 
   {% if not replacement_request %}

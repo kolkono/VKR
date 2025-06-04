@@ -80,32 +80,35 @@
       cabinetSelect.innerHTML = '<option value="">-- Выберите кабинет --</option>';
       filteredCabinets.forEach(c => {
         const opt = document.createElement('option');
-        opt.value = c.name;
-        opt.textContent = c.name;
+        opt.value = c.id;  // ИД кабинета для отправки на сервер
+        opt.textContent = c.number;  // Номер кабинета для отображения
         cabinetSelect.appendChild(opt);
       });
       cabinetSelect.disabled = false;
     });
 
     cabinetSelect.addEventListener('change', () => {
-      const selectedCabinet = cabinetSelect.value;
+      const selectedCabinetId = parseInt(cabinetSelect.value);
       deviceSelect.innerHTML = '';
       deviceSelect.disabled = true;
 
-      if (!selectedCabinet) {
+      if (!selectedCabinetId) {
         deviceSelect.innerHTML = '<option value="">-- Выберите кабинет  --</option>';
         return;
       }
 
-      const filteredDevices = cabinetsData.filter(c => c.name === selectedCabinet)[0]?.devices || [];
+      // Найти кабинет по id, а не по number
+      const cabinet = cabinetsData.find(c => c.id === selectedCabinetId);
+      const devices = cabinet ? cabinet.devices : [];
+
       deviceSelect.innerHTML = '<option value="">-- Выберите устройство --</option>';
-      filteredDevices.forEach(d => {
+      devices.forEach(d => {
         const opt = document.createElement('option');
         opt.value = d.id;
         opt.textContent = d.name;
         deviceSelect.appendChild(opt);
       });
-      deviceSelect.disabled = false;
+      deviceSelect.disabled = devices.length === 0;
     });
   </script>
 {% endblock %}

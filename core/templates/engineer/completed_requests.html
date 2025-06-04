@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Завершённые заявки{% endblock %}
+
+{% block content %}
+<h2>Завершённые заявки</h2>
+<ul>
+  {% for req in requests %}
+    <li>
+      <a href="{% url 'request_detail' req.id %}">Заявка №{{ req.id }}</a> — {{ req.device.name }} ({{ req.device.serial_number }})
+    </li>
+  {% empty %}
+    <p>Нет завершённых заявок.</p>
+  {% endfor %}
+</ul>
+{% endblock %}
