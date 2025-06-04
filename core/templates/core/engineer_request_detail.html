@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Заявка №{{ request.id }} - Детали{% endblock %}
+
+{% block content %}
+<h2>Детали заявки №{{ request.id }}</h2>
+
+<p><strong>Устройство:</strong> {{ request.device.name }} (Серийный номер: {{ request.device.serial_number }})</p>
+<p><strong>Корпус:</strong> {{ request.device.cabinet.building }}, кабинет {{ request.device.cabinet.number }}</p>
+<p><strong>Описание проблемы:</strong> {{ request.description }}</p>
+<p><strong>Статус:</strong> {% if request.is_completed %}Выполнена{% else %}В работе{% endif %}</p>
+
+<hr>
+
+<h3>Журнал действий</h3>
+{% if logs %}
+  <ul>
+    {% for log in logs %}
+      <li>
+        <strong>{{ log.action_date|date:"d.m.Y H:i" }}</strong> - {{ log.description }} ({{ log.engineer.username }})
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>Нет записей в журнале.</p>
+{% endif %}
+
+<hr>
+
+{% if not request.is_completed %}
+  <h3>Добавить запись в журнал</h3>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" name="submit_log">Добавить запись</button>
+    <button type="submit" name="complete_request" style="margin-left: 10px;">Отметить как выполненную</button>
+  </form>
+
+  {% if not replacement_request %}
+    <form method="post" style="margin-top: 20px;">
+      {% csrf_token %}
+      <button type="submit" name="replacement_request">Запросить замену устройства</button>
+    </form>
+  {% else %}
+    <p><strong>Запрос на замену устройства отправлен.</strong></p>
+  {% endif %}
+{% else %}
+  <p><em>Заявка выполнена.</em></p>
+{% endif %}
+
+<a href="{% url 'engineer_dashboard' %}">← Назад к списку заявок</a>
+
+{% endblock %}

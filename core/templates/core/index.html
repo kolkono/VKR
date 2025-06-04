@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Привет, {{ user_name }}!</h1>
+
+<h2>Создать заявку</h2>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Отправить заявку</button>
+</form>
+
+<h2>Твои заявки</h2>
+<ul>
+  {% for req in requests %}
+    <li>{{ req }}</li>
+  {% empty %}
+    <li>Заявок нет</li>
+  {% endfor %}
+</ul>
+{% endblock %}

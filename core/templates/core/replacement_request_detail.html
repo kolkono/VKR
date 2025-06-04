@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Запрос замены №{{ replacement_request.id }}{% endblock %}
+
+{% block content %}
+<h2>Запрос замены устройства №{{ replacement_request.id }}</h2>
+
+<h3>Детали заявки</h3>
+<p><strong>Устройство:</strong> {{ service_request.device.name }} (Серийный номер: {{ service_request.device.serial_number }})</p>
+<p><strong>Корпус:</strong> {{ service_request.device.cabinet.building }}, кабинет {{ service_request.device.cabinet.number }}</p>
+<p><strong>Описание проблемы:</strong> {{ service_request.description }}</p>
+<p><strong>Дата создания заявки:</strong> {{ service_request.created_at|date:"d.m.Y H:i" }}</p>
+
+<hr>
+
+<h3>Отчет о замене устройства</h3>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Подтвердить замену и закрыть заявку</button>
+</form>
+
+<a href="{% url 'admin_dashboard' %}">← Назад к панели администратора</a>
+
+{% endblock %}

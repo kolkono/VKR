@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Вход в систему{% endblock %}
+
+{% block content %}
+  <h2>Вход</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button type="submit" style="
+      background-color: #007acc;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,122,204,0.2);
+      transition: background-color 0.3s ease;
+    " onmouseover="this.style.backgroundColor='#005fa3'"
+       onmouseout="this.style.backgroundColor='#007acc'">
+      Войти
+    </button>
+  </form>
+{% endblock %}
