@@ -2,9 +2,14 @@ from django import forms
 from .models import ServiceRequest, ServiceLog, ReplacementRequest, DeviceReplacementReport
 
 class ServiceRequestForm(forms.ModelForm):
+    replacement_requested = forms.BooleanField(
+        required=False,
+        label="Отправить запрос на замену оборудования"
+    )
+
     class Meta:
         model = ServiceRequest
-        fields = ['device', 'description']
+        fields = ['device', 'description', 'replacement_requested']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
         }
@@ -57,4 +62,13 @@ class DeviceReplacementReportForm(forms.ModelForm):
             'new_device_cost': 'Стоимость нового устройства',
             'new_device_serial_number': 'Серийный номер нового устройства',
             'notes': 'Примечания',
+        }
+
+class AdminReplacementApprovalForm(forms.ModelForm):
+    class Meta:
+        model = ReplacementRequest
+        fields = ['new_device_model', 'new_device_serial']
+        labels = {
+            'new_device_model': 'Модель нового оборудования',
+            'new_device_serial': 'Серийный номер нового оборудования',
         }

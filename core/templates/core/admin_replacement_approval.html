@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Заявка №{{ request_obj.id }} – Подтверждение замены{% endblock %}
+
+{% block content %}
+<h2>Заявка №{{ request_obj.id }} – Подтверждение замены</h2>
+
+<div class="bold-text">Информация о заявке</div>
+<p><strong>Устройство:</strong> {{ request_obj.device.name }} (SN: {{ request_obj.device.serial_number }})</p>
+<p><strong>Описание проблемы:</strong> {{ request_obj.description }}</p>
+<p><strong>Инженер:</strong> {{ request_obj.assigned_engineer.username }}</p>
+<p><strong>Дата создания:</strong> {{ request_obj.created_at|date:"d.m.Y H:i" }}</p>
+
+<hr>
+
+<div class="bold-text">Запрос на замену</div>
+<p><strong>Причина замены:</strong> {{ replacement_request.reason }}</p>
+<p><strong>Дата запроса:</strong> {{ replacement_request.created_at|date:"d.m.Y H:i" }}</p>
+
+{% if replacement_request.admin_approved %}
+  <p style="color: green;"><strong>Запрос уже одобрен.</strong></p>
+{% else %}
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <div class="action-buttons">
+      <button type="submit" class="btn">Одобрить замену</button>
+    </div>
+  </form>
+{% endif %}
+
+<hr>
+
+<a href="{% url 'admin_dashboard' %}">← Назад в панель администратора</a>
+{% endblock %}

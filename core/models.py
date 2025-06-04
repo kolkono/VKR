@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 
 class User(AbstractUser):
@@ -52,8 +53,10 @@ class ServiceRequest(models.Model):
     created_at = models.DateTimeField("Дата создания", auto_now_add=True)
     description = models.TextField("Описание проблемы")
     is_completed = models.BooleanField("Завершено", default=False)
-    requires_replacement = models.BooleanField(default=False)
+    requires_replacement = models.BooleanField("Требуется замена", default=False)
     is_paused = models.BooleanField("Приостановлена (ожидание замены)", default=False)
+
+    replacement_requested = models.BooleanField("Запрос на замену оборудования", default=False)
 
     class Meta:
         verbose_name = "Заявка на обслуживание"
@@ -64,7 +67,11 @@ class ServiceRequest(models.Model):
 
     @property
     def status(self):
-        return "Завершена" if self.is_completed else "В процессе"
+        if self.is_completed:
+            return "Завершена"
+        if self.is_paused:
+            return "Приостановлена (ожидание замены)"
+        return "В процессе"
 
 
 class ServiceLog(models.Model):
@@ -89,13 +96,23 @@ class ServiceLog(models.Model):
 class ReplacementRequest(models.Model):
     service_request = models.OneToOneField(ServiceRequest, on_delete=models.CASCADE, related_name='replacement_request')
     engineer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    reason = models.TextField("Причина замены", blank=True, null=True)  # Здесь хранится причина замены
+    reason = models.TextField("Причина замены", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # Новые поля ↓↓↓
+    new_device_model = models.CharField("Модель нового устройства", max_length=255, blank=True, null=True)
+    new_device_serial = models.CharField("Серийный номер нового устройства", max_length=255, blank=True, null=True)
     admin_approved = models.BooleanField("Одобрено администратором", default=False)
+    approved_at = models.DateTimeField("Дата одобрения", blank=True, null=True)
 
     def approve(self):
         self.admin_approved = True
+        self.approved_at = timezone.now()
         self.save()
+
+        # Возобновляем работу инженера
+        self.service_request.is_paused = False
+        self.service_request.save()
 
     class Meta:
         verbose_name = "Запрос на замену устройства"

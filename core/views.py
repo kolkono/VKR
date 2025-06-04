@@ -1,10 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import ServiceRequest, Cabinet, Device, ServiceLog, ReplacementRequest
+from .models import ServiceRequest, Cabinet, Device, ServiceLog, ReplacementRequest, DeviceReplacementReport
 from .forms import ServiceRequestForm, ServiceLogForm, DeviceReplacementReportForm
 from .decorators import teacher_required, engineer_required, admin_required
 from django.contrib.auth.decorators import user_passes_test
+from django.shortcuts import render, get_object_or_404, redirect
+from django.utils import timezone
+from django.contrib.admin.views.decorators import staff_member_required
+
+
 
 def is_admin(user):
     return user.is_authenticated and user.role == 'admin'
@@ -99,23 +104,34 @@ def engineer_request_detail(request, request_id):
     service_request = get_object_or_404(ServiceRequest, id=request_id, assigned_engineer=request.user)
     replacement_request = ReplacementRequest.objects.filter(service_request=service_request).first()
 
+    # Если заявка приостановлена, блокируем действия инженера
+    if service_request.is_paused:
+        logs = service_request.service_logs.select_related('engineer').order_by('-action_date')
+        context = {
+            'request': service_request,
+            'logs': logs,
+            'replacement_request': replacement_request,
+            'paused_message': "Заявка приостановлена и ожидает одобрения администратора.",
+        }
+        return render(request, 'core/engineer_request_detail.html', context)
+
     if request.method == 'POST':
         form_log = ServiceLogForm(request.POST)
+
         if form_log.is_valid():
             log = form_log.save(commit=False)
             log.request = service_request
             log.engineer = request.user
             log.save()
 
-            # Обработка завершения заявки
+            # Завершение заявки
             if form_log.cleaned_data.get('complete_request'):
                 service_request.is_completed = True
-                service_request.is_paused = False  # Снимаем паузу, если заявка завершена
+                service_request.is_paused = False
                 service_request.save()
 
-            # Обработка запроса на замену оборудования
+            # Запрос на замену устройства
             if form_log.cleaned_data.get('replacement_request'):
-                # Создаём или обновляем ReplacementRequest
                 if not replacement_request:
                     replacement_request = ReplacementRequest.objects.create(
                         service_request=service_request,
@@ -128,22 +144,30 @@ def engineer_request_detail(request, request_id):
                     replacement_request.admin_approved = False
                     replacement_request.save()
 
-                # Ставим паузу и флаг requires_replacement
                 service_request.requires_replacement = True
                 service_request.is_paused = True
                 service_request.save()
 
             return redirect('engineer_request_detail', request_id=request_id)
 
-        # Обработка отчёта по замене, если админ одобрил (на случай, если есть форма отчёта)
+        # Сохранение отчёта по замене
         elif 'replacement_report' in request.POST and replacement_request and replacement_request.admin_approved:
             form_report = DeviceReplacementReportForm(request.POST)
             if form_report.is_valid():
-                report = form_report.save(commit=False)
-                report.replacement_request = replacement_request
-                report.save()
+                try:
+                    # Пытаемся получить существующий отчёт для обновления
+                    report = DeviceReplacementReport.objects.get(replacement_request=replacement_request)
+                    for field, value in form_report.cleaned_data.items():
+                        setattr(report, field, value)
+                    report.created_by = request.user  # Обновляем создателя, если нужно
+                    report.save()
+                except DeviceReplacementReport.DoesNotExist:
+                    # Создаем новый отчёт, если не существует
+                    report = form_report.save(commit=False)
+                    report.replacement_request = replacement_request
+                    report.created_by = request.user
+                    report.save()
 
-                # Завершаем заявку и снимаем паузу
                 service_request.is_completed = True
                 service_request.is_paused = False
                 service_request.save()
@@ -152,9 +176,14 @@ def engineer_request_detail(request, request_id):
                 return redirect('engineer_request_detail', request_id=request_id)
     else:
         form_log = ServiceLogForm()
-        form_report = DeviceReplacementReportForm()
+        form_report = None
+
         if replacement_request and replacement_request.admin_approved:
-            form_report = DeviceReplacementReportForm(instance=replacement_request.device_replacement_report_set.last())
+            try:
+                report_instance = replacement_request.devicereplacementreport
+            except DeviceReplacementReport.DoesNotExist:
+                report_instance = None
+            form_report = DeviceReplacementReportForm(instance=report_instance)
 
     logs = service_request.service_logs.select_related('engineer').order_by('-action_date')
 
@@ -165,7 +194,10 @@ def engineer_request_detail(request, request_id):
         'logs': logs,
         'replacement_request': replacement_request,
     }
+
     return render(request, 'core/engineer_request_detail.html', context)
+
+
 
 @login_required
 @admin_required
@@ -185,8 +217,13 @@ def replacement_request_detail(request, replacement_id):
     replacement_request = get_object_or_404(ReplacementRequest, id=replacement_id, admin_approved=False)
     service_request = replacement_request.service_request
 
+    try:
+        report_instance = DeviceReplacementReport.objects.get(replacement_request=replacement_request)
+    except DeviceReplacementReport.DoesNotExist:
+        report_instance = None
+
     if request.method == 'POST':
-        form = DeviceReplacementReportForm(request.POST)
+        form = DeviceReplacementReportForm(request.POST, instance=report_instance)
         if form.is_valid():
             report = form.save(commit=False)
             report.replacement_request = replacement_request
@@ -205,13 +242,38 @@ def replacement_request_detail(request, replacement_id):
             messages.success(request, f'Запрос замены №{replacement_request.id} успешно подтвержден.')
             return redirect('admin_dashboard')
     else:
-        form = DeviceReplacementReportForm()
+        form = DeviceReplacementReportForm(instance=report_instance)
 
     return render(request, 'core/replacement_request.html', {
         'replacement_request': replacement_request,
         'service_request': service_request,
         'form': form,
     })
+    
+    
+@login_required
+@admin_required
+def admin_request_detail(request, request_id):
+    service_request = get_object_or_404(ServiceRequest, id=request_id)
+    logs = service_request.service_logs.select_related('engineer').order_by('-action_date')
+
+    replacement_request = ReplacementRequest.objects.filter(service_request=service_request).first()
+
+    report = None
+    if replacement_request:
+        try:
+            report = replacement_request.devicereplacementreport
+        except DeviceReplacementReport.DoesNotExist:
+            report = None
+
+    context = {
+        'request': service_request,
+        'logs': logs,
+        'replacement_request': replacement_request,
+        'replacement_report': report,
+    }
+    return render(request, 'core/admin_request_detail.html', context)
+
 
 @login_required
 def active_requests(request):
@@ -277,3 +339,36 @@ def admin_reject_replacement(request, request_id):
     replacement_request.delete()
     messages.info(request, f'Запрос замены №{replacement_request.id} отклонён и удалён.')
     return redirect('admin_replacement_requests')
+
+
+@staff_member_required
+def admin_replacement_approval(request, request_id):
+    service_request = get_object_or_404(ServiceRequest, id=request_id)
+    replacement_request = getattr(service_request, 'replacement_request', None)
+    
+    if not replacement_request:
+        # Если запрос на замену не создавался — можно показать ошибку или перенаправить
+        return redirect('admin_dashboard')
+
+    if request.method == 'POST':
+        form = ReplacementApprovalForm(request.POST, instance=replacement_request)
+        if form.is_valid():
+            replacement = form.save(commit=False)
+            replacement.approve()  # вызываем метод approve, который меняет флаги
+            replacement.save()
+            
+            # Переводим заявку в завершённые — или даём возможность инженеру работать дальше
+            service_request.is_completed = False
+            service_request.is_paused = False
+            service_request.save()
+            
+            return redirect('admin_replacement_approval', request_id=request_id)
+    else:
+        form = ReplacementApprovalForm(instance=replacement_request)
+
+    context = {
+        'request': service_request,
+        'replacement_request': replacement_request,
+        'form': form,
+    }
+    return render(request, 'core/admin_replacement_approval.html', context)

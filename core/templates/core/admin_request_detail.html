@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Детали заявки №{{ request.id }}{% endblock %}
+
+{% block content %}
+  <h2>Заявка №{{ request.id }}</h2>
+
+  <p><strong>Устройство:</strong> {{ request.device.name }} ({{ request.device.serial_number }})</p>
+  <p><strong>Статус заявки:</strong> {% if request.is_completed %}Завершена{% else %}В работе{% endif %}</p>
+
+  <hr>
+
+  <h3>Журнал действий инженера</h3>
+  {% if logs %}
+    <ul>
+      {% for log in logs %}
+        <li>
+          <strong>{{ log.action_type }}</strong><br>
+          {% if log.notes %}
+            Примечание: {{ log.notes }}<br>
+          {% endif %}
+          <small>Дата: {{ log.action_date|date:"d.m.Y H:i" }}, Инженер: {{ log.engineer.username }}</small>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>Нет записей в журнале.</p>
+  {% endif %}
+
+  {% if replacement_request %}
+    <hr>
+    <h3>Запрос на замену устройства №{{ replacement_request.id }}</h3>
+    <p><strong>Инженер:</strong> {{ replacement_request.engineer.username }}</p>
+    <p><strong>Причина замены:</strong> {{ replacement_request.reason|linebreaks }}</p>
+    <p><strong>Статус одобрения:</strong> {% if replacement_request.admin_approved %}Одобрен{% else %}Ожидает одобрения{% endif %}</p>
+
+    {% if replacement_report %}
+      <hr>
+      <h4>Отчёт по замене</h4>
+      <p><strong>Дата создания:</strong> {{ replacement_report.created_at|date:"d.m.Y H:i" }}</p>
+      <p><strong>Создатель:</strong> {{ replacement_report.created_by.username }}</p>
+      <p><strong>Описание:</strong> {{ replacement_report.description|linebreaks }}</p>  {# замени description на нужные поля отчёта #}
+    {% else %}
+      <p>Отчёт по замене ещё не добавлен.</p>
+    {% endif %}
+  {% endif %}
+
+  <div class="action-buttons">
+    <a href="{% url 'admin_dashboard' %}" class="btn">← Назад в панель администратора</a>
+  </div>
+{% endblock %}
