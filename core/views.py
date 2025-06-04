@@ -476,3 +476,7 @@ def admin_replacement_approval(request, request_id):
         'form': form,
     }
     return render(request, 'core/admin_replacement_approval.html', context)
+
+@login_required
+def teacher_dashboard(request):
+    return render(request, 'core/teacher_dashboard.html', {'user': request.user})

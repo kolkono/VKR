@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Добро пожаловать, {{ user_name }}!</h2>
+
+<div style="margin-top:20px;">
+    <a href="{% url 'create_request' %}" class="btn btn-primary">Создать заявку</a>
+    <a href="{% url 'my_requests' %}" class="btn btn-secondary">Мои заявки</a>
+</div>
+{% endblock %}

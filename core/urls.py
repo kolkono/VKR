@@ -8,6 +8,7 @@ urlpatterns = [
     path('profile/', views.profile_view, name='profile'),
 
     # Преподаватель
+    path('dashboard/', views.teacher_dashboard, name='teacher_dashboard'),
     path('my-requests/', views.my_requests, name='my_requests'),
     path('create-request/', views.create_request, name='create_request'),
 
