@@ -16,10 +16,12 @@ urlpatterns = [
     path('engineer/dashboard/', views.engineer_dashboard, name='engineer_dashboard'),
     path('engineer/all-active/', views.all_active_requests, name='all_active_requests'),
     path('engineer/my-active/', views.my_active_requests, name='my_active_requests'),
+    path('engineer/request/<int:request_id>/assign-from-all/', views.assign_request_from_all, name='assign_request_from_all'),
     path('engineer/request/<int:request_id>/', views.engineer_request_detail, name='engineer_request_detail'),
     path('engineer/request/<int:request_id>/assign/', views.assign_request_to_self, name='assign_request_to_self'),
     path('active-requests/', views.active_requests, name='active_requests'),
     path('completed-requests/', views.completed_requests, name='completed_requests'),
+    
 
     # Админка — единый префикс /dashboard/admin/
     path('dashboard/admin/', views.admin_dashboard, name='admin_dashboard'),

@@ -516,7 +516,7 @@ def teacher_dashboard(request):
 @login_required
 @engineer_required
 def all_active_requests(request):
-    qs = ServiceRequest.objects.select_related('device__cabinet', 'assigned_engineer').filter(is_completed=False)
+    qs = ServiceRequest.objects.select_related('device__cabinet', 'assigned_engineer').all()
 
     # Параметры фильтрации из GET-запроса
     building = request.GET.get('building')
@@ -533,7 +533,7 @@ def all_active_requests(request):
     if engineer_id:
         qs = qs.filter(assigned_engineer__id=engineer_id)
 
-    if status == 'unassigned':
+    if status == 'new':
         qs = qs.filter(assigned_engineer__isnull=True, is_paused=False)
     elif status == 'in_progress':
         qs = qs.filter(assigned_engineer__isnull=False, is_paused=False)
@@ -569,18 +569,55 @@ def all_active_requests(request):
 
 
 
+from django.utils.dateparse import parse_date
+from django.contrib.auth.decorators import login_required
+from .models import ServiceRequest, Cabinet
+
 @login_required
 @engineer_required
 def my_active_requests(request):
-    qs = ServiceRequest.objects.filter(
-        assigned_engineer=request.user,
-        is_completed=False
-    ).select_related('device__cabinet').order_by('-created_at')
+    user = request.user
+    requests_qs = ServiceRequest.objects.filter(assigned_engineer=user)
 
-    return render(request, 'engineer/my_active_requests.html', {
-        'requests': qs,
-        'title': 'Мои активные заявки',
+    # Фильтрация
+    building = request.GET.get("building")
+    cabinet_id = request.GET.get("cabinet")
+    status = request.GET.get("status")
+    from_date = parse_date(request.GET.get("from_date") or "")
+    to_date = parse_date(request.GET.get("to_date") or "")
+
+    if building:
+        requests_qs = requests_qs.filter(device__cabinet__building=building)
+
+    if cabinet_id:
+        requests_qs = requests_qs.filter(device__cabinet__id=cabinet_id)
+
+    if status == "completed":
+        requests_qs = requests_qs.filter(is_completed=True)
+    elif status == "paused":
+        requests_qs = requests_qs.filter(is_paused=True)
+    elif status == "active":
+        requests_qs = requests_qs.filter(is_completed=False, is_paused=False)
+
+    if from_date:
+        requests_qs = requests_qs.filter(created_at__date__gte=from_date)
+    if to_date:
+        requests_qs = requests_qs.filter(created_at__date__lte=to_date)
+
+    # Сортировка от новых к старым
+    requests_qs = requests_qs.order_by('-created_at')
+
+    buildings = Cabinet.objects.values_list("building", flat=True).distinct()
+    cabinets = Cabinet.objects.all()
+
+    return render(request, "engineer/my_active_requests.html", {
+        "requests": requests_qs,
+        "buildings": buildings,
+        "cabinets": cabinets,
     })
+
+
+
 
 
 @login_required
@@ -609,3 +646,12 @@ def completed_requests(request):
         'selected_cabinet': cabinet_id,
         'title': 'Завершённые заявки',
     })
+
+@login_required
+@engineer_required
+def assign_request_from_all(request, request_id):
+    service_request = get_object_or_404(ServiceRequest, id=request_id, assigned_engineer__isnull=True)
+    service_request.assigned_engineer = request.user
+    service_request.save()
+    messages.success(request, f'Вы взяли заявку #{service_request.id} в работу.')
+    return redirect('all_active_requests')
