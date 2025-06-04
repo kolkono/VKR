@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block title %}Все активные заявки{% endblock %}
+
+{% block content %}
+  <!-- Вкладки -->
+  <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+    <a href="{% url 'all_active_requests' %}"
+       style="padding: 8px 16px; text-decoration: none; border: 1px solid #ccc; border-radius: 4px;
+              {% if request.resolver_match.url_name == 'all_active_requests' %}background-color: #007acc; color: white;{% else %}background-color: #f2f2f2; color: #333;{% endif %}">
+      Все заявки
+    </a>
+    <a href="{% url 'my_active_requests' %}"
+       style="padding: 8px 16px; text-decoration: none; border: 1px solid #ccc; border-radius: 4px;
+              {% if request.resolver_match.url_name == 'my_active_requests' %}background-color: #007acc; color: white;{% else %}background-color: #f2f2f2; color: #333;{% endif %}">
+      Мои заявки
+    </a>
+    <a href="{% url 'completed_requests' %}"
+       style="padding: 8px 16px; text-decoration: none; border: 1px solid #ccc; border-radius: 4px;
+              {% if request.resolver_match.url_name == 'completed_requests' %}background-color: #007acc; color: white;{% else %}background-color: #f2f2f2; color: #333;{% endif %}">
+      Завершённые заявки
+    </a>
+  </div>
+
+  <h2>Все активные заявки</h2>
+
+  <form method="get" style="margin-bottom: 20px;">
+    <label>Корпус:
+      <select name="building">
+        <option value="">Все</option>
+        {% for b in buildings %}
+          <option value="{{ b }}" {% if selected_building == b %}selected{% endif %}>{{ b }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Аудитория:
+      <select name="cabinet">
+        <option value="">Все</option>
+        {% for c in cabinets %}
+          <option value="{{ c.id }}" {% if selected_cabinet == c.id|stringformat:"s" %}selected{% endif %}>
+            {{ c.number }}
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Инженер:
+      <select name="engineer">
+        <option value="">Все</option>
+        {% for e in engineers %}
+          <option value="{{ e.id }}" {% if selected_engineer == e.id|stringformat:"s" %}selected{% endif %}>
+            {{ e.username }}
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Статус:
+      <select name="status">
+        <option value="">Все</option>
+        <option value="new" {% if selected_status == 'new' %}selected{% endif %}>Не назначена</option>
+        <option value="in_progress" {% if selected_status == 'in_progress' %}selected{% endif %}>В работе</option>
+        <option value="paused" {% if selected_status == 'paused' %}selected{% endif %}>В процессе согласования</option>
+        <option value="completed" {% if selected_status == 'completed' %}selected{% endif %}>Завершена</option>
+      </select>
+    </label>
+    <label>Дата:
+      <input type="date" name="date" value="{{ selected_date }}">
+    </label>
+    <button type="submit">Фильтровать</button>
+  </form>
+
+  {% if requests %}
+    <table style="width: 100%; border-collapse: collapse; border: 1px solid #ccc;">
+      <thead>
+        <tr style="background-color: #007acc; color: white;">
+          <th style="padding: 10px; border: 1px solid #ccc;">Корпус</th>
+          <th style="padding: 10px; border: 1px solid #ccc;">Аудитория</th>
+          <th style="padding: 10px; border: 1px solid #ccc;">Устройство</th>
+          <th style="padding: 10px; border: 1px solid #ccc;">Инженер</th>
+          <th style="padding: 10px; border: 1px solid #ccc;">Дата</th>
+          <th style="padding: 10px; border: 1px solid #ccc;">Статус</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in requests %}
+          <tr>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ req.device.cabinet.building }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ req.device.cabinet.number }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ req.device.name }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ req.assigned_engineer.username|default:"—" }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ req.created_at|date:"d.m.Y H:i" }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc; font-weight: 600;
+              {% if req.is_completed %}
+                color: green;
+              {% elif req.is_paused %}
+                color: orange;
+              {% elif req.assigned_engineer %}
+                color: orange;
+              {% else %}
+                color: red;
+              {% endif %}">
+              {% if req.is_completed %}
+                Завершена
+              {% elif req.is_paused %}
+                В процессе согласования
+              {% elif req.assigned_engineer %}
+                В работе
+              {% else %}
+                Не назначена
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Заявки не найдены.</p>
+  {% endif %}
+{% endblock %}

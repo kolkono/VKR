@@ -14,6 +14,8 @@ urlpatterns = [
 
     # Инженер
     path('engineer/dashboard/', views.engineer_dashboard, name='engineer_dashboard'),
+    path('engineer/all-active/', views.all_active_requests, name='all_active_requests'),
+    path('engineer/my-active/', views.my_active_requests, name='my_active_requests'),
     path('engineer/request/<int:request_id>/', views.engineer_request_detail, name='engineer_request_detail'),
     path('engineer/request/<int:request_id>/assign/', views.assign_request_to_self, name='assign_request_to_self'),
     path('active-requests/', views.active_requests, name='active_requests'),
@@ -27,7 +29,7 @@ urlpatterns = [
     path('dashboard/admin/replacement-requests/<int:request_id>/approve/', views.admin_approve_replacement, name='admin_approve_replacement'),
     path('dashboard/admin/replacement-requests/<int:request_id>/reject/', views.admin_reject_replacement, name='admin_reject_replacement'),
 
-    # *** Новые маршруты для активных и завершённых заявок админа ***
+    # Новые маршруты для активных и завершённых заявок админа
     path('dashboard/admin/active/', views.admin_active_requests, name='admin_active_requests'),
     path('dashboard/admin/completed/', views.admin_completed_requests, name='admin_completed_requests'),
 

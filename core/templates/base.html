@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <title>{% block title %}Сервисная система{% endblock %}</title>
     <style>
-      /* [Стили остаются без изменений — см. твой код] */
       body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         background-color: #f9faff;
@@ -128,41 +127,43 @@
     </style>
 </head>
 <body>
-    <header>
-        <h1>Сервисная система</h1>
-        <nav>
-          {% if user.is_authenticated %}
-            <span>Привет, <a href="{% url 'profile' %}">{{ user.username }}</a>!</span>
+  <header>
+    <h1>Сервисная система</h1>
+    <nav>
+      {% if user.is_authenticated %}
+        <span>Привет, <a href="{% url 'profile' %}">{{ user.username }}</a>!</span>
 
-            {% if user.role == 'teacher' %}
-              <a href="{% url 'create_request' %}" class="{% if request.path == '/create-request/' %}active{% endif %}">Создать заявку</a>
-              <a href="{% url 'my_requests' %}" class="{% if request.path == '/my-requests/' %}active{% endif %}">Мои заявки</a>
-            {% elif user.role == 'engineer' %}
-              <a href="{% url 'active_requests' %}" class="{% if request.path == '/active-requests/' %}active{% endif %}">Активные заявки</a>
-              <a href="{% url 'completed_requests' %}" class="{% if request.path == '/completed-requests/' %}active{% endif %}">Завершённые заявки</a>
-            {% elif user.role == 'admin' %}
-              <a href="{% url 'admin_active_requests' %}" class="{% if request.path == '/dashboard/admin/active/' %}active{% endif %}">Активные заявки</a>
-              <a href="{% url 'admin_completed_requests' %}" class="{% if request.path == '/dashboard/admin/completed/' %}active{% endif %}">Завершённые заявки</a>
-            {% endif %}
+        {% if user.role == 'teacher' %}
+          <a href="{% url 'create_request' %}" class="{% if request.path == '/create-request/' %}active{% endif %}">Создать заявку</a>
+          <a href="{% url 'my_requests' %}" class="{% if request.path == '/my-requests/' %}active{% endif %}">Мои заявки</a>
 
-            <form method="post" action="{% url 'logout' %}" class="logout-form">
-              {% csrf_token %}
-              <button type="submit">Выйти</button>
-            </form>
-          {% else %}
-            {% if request.path != '/login/' %}
-              <a href="{% url 'login' %}">Войти</a>
-            {% endif %}
-          {% endif %}
-        </nav>
-    </header>
+        {% elif user.role == 'engineer' %}
+          <a href="{% url 'all_active_requests' %}" class="{% if request.path == '/engineer/all-active/' %}active{% endif %}">Все заявки</a>
+          <a href="{% url 'my_active_requests' %}" class="{% if request.path == '/engineer/my-active/' %}active{% endif %}">Мои заявки</a>
 
-    <main>
-        {% block content %}{% endblock %}
-    </main>
+        {% elif user.role == 'admin' %}
+          <a href="{% url 'admin_active_requests' %}" class="{% if request.path == '/dashboard/admin/active/' %}active{% endif %}">Активные</a>
+          <a href="{% url 'admin_completed_requests' %}" class="{% if request.path == '/dashboard/admin/completed/' %}active{% endif %}">Завершённые</a>
+        {% endif %}
 
-    <footer>
-        <p>© 2025</p>
-    </footer>
+        <form method="post" action="{% url 'logout' %}" class="logout-form">
+          {% csrf_token %}
+          <button type="submit">Выйти</button>
+        </form>
+      {% else %}
+        {% if request.path != '/login/' %}
+          <a href="{% url 'login' %}">Войти</a>
+        {% endif %}
+      {% endif %}
+    </nav>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <p>© 2025</p>
+  </footer>
 </body>
 </html>

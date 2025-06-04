@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from django.contrib.admin.views.decorators import staff_member_required
+from django.db.models import Q
 
 
 
@@ -92,21 +93,30 @@ def devices_api(request):
 @login_required
 @engineer_required
 def engineer_dashboard(request):
-    assigned_requests = ServiceRequest.objects.filter(
-        assigned_engineer=request.user,
-        is_completed=False
-    ).select_related('device__cabinet').order_by('-created_at')
+    building = request.GET.get('building')
+    cabinet_id = request.GET.get('cabinet')
 
-    unassigned_requests = ServiceRequest.objects.filter(
-        assigned_engineer__isnull=True,
+    requests = ServiceRequest.objects.filter(
         is_completed=False
-    ).select_related('device__cabinet').order_by('-created_at')
+    ).filter(
+        Q(assigned_engineer=request.user) | Q(assigned_engineer__isnull=True)
+    ).select_related('device__cabinet')
 
-    requests = list(assigned_requests) + list(unassigned_requests)
+    if building:
+        requests = requests.filter(device__cabinet__building=building)
+    if cabinet_id:
+        requests = requests.filter(device__cabinet__id=cabinet_id)
+
+    buildings = Cabinet.objects.values_list('building', flat=True).distinct()
+    cabinets = Cabinet.objects.all()
 
     return render(request, 'core/engineer_dashboard.html', {
-        'requests': requests,
+        'requests': requests.order_by('-created_at'),
         'user_name': request.user.username,
+        'buildings': buildings,
+        'cabinets': cabinets,
+        'selected_building': building,
+        'selected_cabinet': cabinet_id,
     })
 
 @login_required
@@ -500,3 +510,102 @@ def admin_replacement_approval(request, request_id):
 @login_required
 def teacher_dashboard(request):
     return render(request, 'core/teacher_dashboard.html', {'user': request.user})
+
+
+
+@login_required
+@engineer_required
+def all_active_requests(request):
+    qs = ServiceRequest.objects.select_related('device__cabinet', 'assigned_engineer').filter(is_completed=False)
+
+    # Параметры фильтрации из GET-запроса
+    building = request.GET.get('building')
+    cabinet_id = request.GET.get('cabinet')
+    engineer_id = request.GET.get('engineer')
+    status = request.GET.get('status')
+    date = request.GET.get('date')
+
+    # Применение фильтров
+    if building:
+        qs = qs.filter(device__cabinet__building=building)
+    if cabinet_id:
+        qs = qs.filter(device__cabinet__id=cabinet_id)
+    if engineer_id:
+        qs = qs.filter(assigned_engineer__id=engineer_id)
+
+    if status == 'unassigned':
+        qs = qs.filter(assigned_engineer__isnull=True, is_paused=False)
+    elif status == 'in_progress':
+        qs = qs.filter(assigned_engineer__isnull=False, is_paused=False)
+    elif status == 'paused':
+        qs = qs.filter(is_paused=True)
+    elif status == 'completed':
+        qs = qs.filter(is_completed=True)
+
+    if date:
+        qs = qs.filter(created_at__date=date)
+
+    # Данные для выпадающих списков
+    buildings = Cabinet.objects.values_list('building', flat=True).distinct()
+    cabinets = Cabinet.objects.all()
+    engineers = (
+        ServiceRequest.objects.filter(assigned_engineer__isnull=False)
+        .values('assigned_engineer__id', 'assigned_engineer__username')
+        .distinct()
+    )
+
+    return render(request, 'engineer/all_active_requests.html', {
+        'requests': qs.order_by('-created_at'),
+        'buildings': buildings,
+        'cabinets': cabinets,
+        'engineers': engineers,
+        'selected_building': building,
+        'selected_cabinet': cabinet_id,
+        'selected_engineer': engineer_id,
+        'selected_status': status,
+        'selected_date': date,
+        'title': 'Все активные заявки',
+    })
+
+
+
+@login_required
+@engineer_required
+def my_active_requests(request):
+    qs = ServiceRequest.objects.filter(
+        assigned_engineer=request.user,
+        is_completed=False
+    ).select_related('device__cabinet').order_by('-created_at')
+
+    return render(request, 'engineer/my_active_requests.html', {
+        'requests': qs,
+        'title': 'Мои активные заявки',
+    })
+
+
+@login_required
+@engineer_required
+def completed_requests(request):
+    qs = ServiceRequest.objects.filter(
+        is_completed=True
+    ).select_related('device__cabinet').order_by('-created_at')
+
+    building = request.GET.get('building')
+    cabinet_id = request.GET.get('cabinet')
+
+    if building:
+        qs = qs.filter(device__cabinet__building=building)
+    if cabinet_id:
+        qs = qs.filter(device__cabinet__id=cabinet_id)
+
+    buildings = Cabinet.objects.values_list('building', flat=True).distinct()
+    cabinets = Cabinet.objects.all()
+
+    return render(request, 'engineer/completed_requests.html', {
+        'requests': qs,
+        'buildings': buildings,
+        'cabinets': cabinets,
+        'selected_building': building,
+        'selected_cabinet': cabinet_id,
+        'title': 'Завершённые заявки',
+    })

@@ -1,42 +1,69 @@
 {% extends 'base.html' %}
-{% block title %}Активные заявки{% endblock %}
 
 {% block content %}
-<h2>Активные заявки</h2>
+<h2 style="text-align: center;">{% if title %}{{ title }}{% else %}Заявки{% endif %}</h2>
+
+<form method="get" class="action-buttons" style="margin-bottom: 20px;">
+  <label>
+    Корпус:
+    <select name="building">
+      <option value="">Все</option>
+      {% for b in buildings %}
+        <option value="{{ b }}" {% if b == selected_building %}selected{% endif %}>{{ b }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label style="margin-left: 15px;">
+    Аудитория:
+    <select name="cabinet">
+      <option value="">Все</option>
+      {% for c in cabinets %}
+        <option value="{{ c.id }}" {% if c.id|stringformat:"s" == selected_cabinet %}selected{% endif %}>
+          {{ c.number }} ({{ c.building }})
+        </option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <button type="submit" class="btn" style="margin-left: 15px;">Фильтровать</button>
+</form>
 
 {% if requests %}
-<table style="width: 100%; border-collapse: collapse;">
-  <thead style="background-color: #f0f0f0;">
-    <tr>
-      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">№</th>
-      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Корпус</th>
-      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Аудитория</th>
-      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Устройство</th>
-      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Серийный номер</th>
-      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Дата заявки</th>
-      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Статус</th>
-      <th style="border: 1px solid #ccc; padding: 8px; text-align: center;">Подробнее</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for req in requests %}
-    <tr>
-      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.id }}</td>
-      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.device.cabinet.building }}</td>
-      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.device.cabinet.number }}</td>
-      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.device.name }}</td>
-      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.device.serial_number }}</td>
-      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.created_at|date:"d.m.Y H:i" }}</td>
-      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.status }}</td>
-      <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">
-        <a href="{% url 'engineer_request_detail' req.id %}">Открыть</a>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+  <table style="width: 100%; border-collapse: collapse; border: 1px solid #ccc; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <thead>
+      <tr style="background-color: #007acc; color: white;">
+        <th style="padding: 12px; border: 1px solid #ccc;">Корпус</th>
+        <th style="padding: 12px; border: 1px solid #ccc;">Аудитория</th>
+        <th style="padding: 12px; border: 1px solid #ccc;">Устройство</th>
+        <th style="padding: 12px; border: 1px solid #ccc;">Дата</th>
+        <th style="padding: 12px; border: 1px solid #ccc;">Статус</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for req in requests %}
+        <tr style="background-color: white;">
+          <td style="padding: 10px; border: 1px solid #ccc;">{{ req.device.cabinet.building }}</td>
+          <td style="padding: 10px; border: 1px solid #ccc;">{{ req.device.cabinet.number }}</td>
+          <td style="padding: 10px; border: 1px solid #ccc;">{{ req.device.name }}</td>
+          <td style="padding: 10px; border: 1px solid #ccc;">{{ req.created_at|date:"d.m.Y H:i" }}</td>
+          <td style="padding: 10px; border: 1px solid #ccc; font-weight: 600;
+            {% if not req.assigned_engineer %}
+              color: red;
+            {% elif req.is_paused %}
+              color: orange;
+            {% elif not req.is_completed %}
+              color: orange;
+            {% else %}
+              color: green;
+            {% endif %}">
+            {{ req.status }}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 {% else %}
-  <p>Нет активных заявок.</p>
+  <p style="text-align: center; margin-top: 20px;">Заявок нет.</p>
 {% endif %}
-
 {% endblock %}
