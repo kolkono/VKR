@@ -35,6 +35,9 @@ urlpatterns = [
     path('dashboard/admin/devices/<int:device_id>/', views.device_detail, name='device_detail'),
     path('dashboard/admin/', views.admin_dashboard, name='admin_dashboard'),
     path('dashboard/admin/replacement/<int:request_id>/', views.admin_request_detail, name='replacement_request_detail'),
+    path('ajax/get-devices/', views.get_devices_by_cabinet, name='get_devices_by_cabinet'),
+    path('dashboard/admin/request/<int:request_id>/', views.admin_request_detail, name='admin_request_detail'),
+
 
 
     

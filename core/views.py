@@ -12,6 +12,9 @@ from django.db.models import Q
 from django.utils.dateparse import parse_date
 from django import forms
 from .models import DeviceReplacementReport
+from .forms import AdminDeviceReplacementForm
+from django.http import JsonResponse
+
 
 
 
@@ -269,9 +272,7 @@ def admin_active_requests(request):
 
     replacement_requests = ReplacementRequest.objects.filter(
         admin_approved=False,
-        service_request__is_paused=True,
-        service_request__assigned_engineer__isnull=False,
-        service_request__is_completed=False
+
     ).select_related('service_request__device__cabinet', 'service_request__assigned_engineer')
 
     if building:
@@ -346,31 +347,62 @@ def admin_completed_requests(request):
 
 
 
-@login_required
-@admin_required
 def admin_request_detail(request, request_id):
-    print(f"admin_request_detail вызван для request_id={request_id}")  # отладка
-
-    service_request = get_object_or_404(ServiceRequest, id=request_id)
+    replacement_request = get_object_or_404(ReplacementRequest, id=request_id)
+    service_request = replacement_request.service_request
+    device = service_request.device
 
     logs = service_request.service_logs.select_related('engineer').order_by('-action_date')
-    replacement_request = ReplacementRequest.objects.filter(service_request=service_request).first()
 
-    report = None
-    if replacement_request:
-        try:
-            report = replacement_request.devicereplacementreport
-        except DeviceReplacementReport.DoesNotExist:
-            report = None
+    try:
+        report = replacement_request.devicereplacementreport
+    except DeviceReplacementReport.DoesNotExist:
+        report = None
+
+    if request.method == "POST":
+        form = AdminDeviceReplacementForm(request.POST)
+        if form.is_valid():
+            to_cabinet_for_old = form.cleaned_data['to_cabinet_for_old']
+            new_device = form.cleaned_data['new_device']
+            notes = form.cleaned_data['notes']
+
+            old_cabinet = device.cabinet  # Сохраняем старое расположение
+            
+            # Перемещаем старое устройство в выбранный кабинет
+            device.cabinet = to_cabinet_for_old
+            device.save()
+
+            # Перемещаем новое устройство в кабинет старого устройства (старый кабинет)
+            new_device.cabinet = old_cabinet
+            new_device.save()
+
+            # Создаём отчёт
+            DeviceReplacementReport.objects.create(
+                replacement_request=replacement_request,
+                created_by=request.user,
+                device=new_device,
+                from_cabinet=old_cabinet,
+                to_cabinet=to_cabinet_for_old,
+                notes=notes
+            )
+
+            # Отмечаем заявку как завершённую
+            service_request.is_completed = True
+            service_request.save()
+
+            messages.success(request, "Замена успешно проведена.")
+            return redirect("admin_request_detail", request_id=request_id)
+    else:
+        form = AdminDeviceReplacementForm()
 
     context = {
         'service_request': service_request,
         'logs': logs,
         'replacement_request': replacement_request,
         'replacement_report': report,
+        'form': form,
     }
     return render(request, 'core/admin/admin_request_detail.html', context)
-
 
 
 
@@ -668,3 +700,12 @@ def admin_cabinet_devices(request, building, number):
         'devices': devices
     })
 
+
+
+@login_required
+@admin_required
+def get_devices_by_cabinet(request):
+    cabinet_id = request.GET.get('cabinet_id')
+    devices = Device.objects.filter(cabinet_id=cabinet_id)
+    device_list = [{'id': d.id, 'name': f"{d.name} ({d.serial_number})"} for d in devices]
+    return JsonResponse({'devices': device_list})

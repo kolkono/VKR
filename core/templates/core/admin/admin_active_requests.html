@@ -89,7 +89,7 @@
           <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">{{ req.obj.service_request.created_by.username }}</td>
           <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">Заявка на замену</td>
           <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">
-            <a href="{% url 'replacement_request_detail' req.obj.id %}">Просмотр</a>
+            <a href="{% url 'admin_request_detail' req.obj.service_request.id %}">Просмотр</a>
           </td>
         </tr>
       {% endif %}

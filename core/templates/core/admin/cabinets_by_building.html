@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Аудитории по корпусам</h2>
+    <div class="table-responsive mt-4">
+        <table class="table table-bordered text-center">
+            <thead>
+                <tr>
+                    {% for building in grouped_cabinets.keys %}
+                        <th>{{ building }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    {% for building, cabinets in grouped_cabinets.items %}
+                        <td>
+                            {% for cabinet in cabinets %}
+                                <div>{{ cabinet.number }}</div>
+                            {% empty %}
+                                <div><em>Нет</em></div>
+                            {% endfor %}
+                        </td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

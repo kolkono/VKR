@@ -43,7 +43,28 @@
       <p><strong>В кабинет:</strong> {{ replacement_report.to_cabinet }}</p>
       <p><strong>Примечания:</strong> {{ replacement_report.notes|linebreaks }}</p>
     {% else %}
-      <p>Отчёт по замене ещё не добавлен.</p>
+      <hr>
+      <h3>Оформить замену оборудования</h3>
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          {{ form.from_cabinet_for_new.label_tag }}
+          {{ form.from_cabinet_for_new }}
+        </div>
+        <div class="form-group">
+          {{ form.new_device.label_tag }}
+          {{ form.new_device }}
+        </div>
+        <div class="form-group">
+          {{ form.to_cabinet_for_old.label_tag }}
+          {{ form.to_cabinet_for_old }}
+        </div>
+        <div class="form-group">
+          {{ form.notes.label_tag }}
+          {{ form.notes }}
+        </div>
+        <button type="submit" class="btn btn-primary">Заменить и сохранить отчёт</button>
+      </form>
     {% endif %}
   {% endif %}
 

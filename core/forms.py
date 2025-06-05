@@ -1,5 +1,7 @@
 from django import forms
 from .models import ServiceRequest, ServiceLog, ReplacementRequest, DeviceReplacementReport
+from .models import Cabinet, Device
+
 
 class ServiceRequestForm(forms.ModelForm):
     replacement_requested = forms.BooleanField(
@@ -59,3 +61,44 @@ class DeviceReplacementReportForm(forms.ModelForm):
             'to_cabinet': forms.Select(attrs={'class': 'form-select'}),
             'notes': forms.Textarea(attrs={'class': 'form-control'}),
         }
+        
+        
+
+
+class AdminDeviceReplacementForm(forms.Form):
+    from_cabinet_for_new = forms.ModelChoiceField(
+        queryset=Cabinet.objects.all(),
+        label="Откуда переместить новое устройство",
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'id': 'id_from_cabinet'  # если нужна динамика через JS
+        })
+    )
+
+    new_device = forms.ModelChoiceField(
+        queryset=Device.objects.none(),  # Заполняется динамически по выбору кабинета (если нужно)
+        label="Новое устройство (на замену)",
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'id': 'id_new_device'
+        })
+    )
+
+    to_cabinet_for_old = forms.ModelChoiceField(
+        queryset=Cabinet.objects.all(),
+        label="Куда переместить старое устройство",
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'id': 'id_to_cabinet'
+        })
+    )
+
+    notes = forms.CharField(
+        label="Примечания",
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Опишите причину и детали замены...'
+        })
+    )

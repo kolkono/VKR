@@ -31,7 +31,7 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'service_system.urls'
 
 TEMPLATES = [
-    {
+    {   
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [BASE_DIR / 'templates'],  # Добавлена папка с шаблонами
         'APP_DIRS': True,
