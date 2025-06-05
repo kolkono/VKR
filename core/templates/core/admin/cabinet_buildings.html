@@ -1,0 +1,28 @@
+{% extends 'core/base.html' %}
+
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Выберите корпус</h2>
+
+    {% if buildings %}
+        <div class="row">
+            {% for b in buildings %}
+                <div class="col-md-3 mb-3">
+                    <a href="{% url 'admin_cabinets_by_building' b %}" class="text-decoration-none">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body text-center">
+                                <h5 class="card-title mb-0">{{ b }}</h5>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            Нет данных о корпусах.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

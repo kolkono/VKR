@@ -4,6 +4,7 @@ from django.conf import settings
 from django.utils import timezone
 
 
+
 class User(AbstractUser):
     ROLE_CHOICES = [
         ('admin', 'Администратор'),
@@ -125,16 +126,34 @@ class ReplacementRequest(models.Model):
 class DeviceReplacementReport(models.Model):
     replacement_request = models.OneToOneField(ReplacementRequest, on_delete=models.CASCADE)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    old_device_info = models.TextField("Информация о списанном устройстве")
-    new_device_name = models.CharField("Название нового устройства", max_length=100)
-    new_device_cost = models.DecimalField("Стоимость нового устройства", max_digits=10, decimal_places=2)
-    new_device_serial_number = models.CharField("Серийный номер нового устройства", max_length=100)
+
+    # Устройство, которое перемещается
+    device = models.ForeignKey('Device', on_delete=models.CASCADE, verbose_name="Устройство для перемещения", null=True)
+
+    # Откуда и куда
+    from_cabinet = models.ForeignKey(
+        'Cabinet',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='replacement_source',
+        verbose_name="Кабинет (источник)"
+    )
+    to_cabinet = models.ForeignKey(
+        'Cabinet',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='replacement_target',
+        verbose_name="Кабинет (назначение)"
+    )
+
     notes = models.TextField("Примечания", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = "Отчёт по замене устройства"
-        verbose_name_plural = "Отчёты по замене устройств"
+        verbose_name = "Перемещение устройства"
+        verbose_name_plural = "Перемещения устройств"
 
     def __str__(self):
-        return f"Отчёт по замене (Запрос #{self.replacement_request.id})"
+        return f"Перемещение устройства #{self.device.id} — {self.from_cabinet} → {self.to_cabinet}"

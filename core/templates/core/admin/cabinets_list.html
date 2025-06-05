@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Аудитории корпуса {{ building }}</h2>
+
+    {% if cabinets %}
+        <div class="row">
+            {% for cabinet in cabinets %}
+                <div class="col-md-3 mb-4">
+                    <a href="{% url 'admin_cabinet_devices' building=cabinet.building number=cabinet.number %}" class="text-decoration-none">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body text-center">
+                                <h5 class="card-title mb-0">{{ cabinet.number }}</h5>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-warning">В этом корпусе нет аудиторий.</div>
+    {% endif %}
+</div>
+{% endblock %}

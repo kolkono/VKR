@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Информация об устройстве</h2>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <p><strong>Название:</strong> {{ device.name }}</p>
+            <p><strong>Серийный номер:</strong> {{ device.serial_number }}</p>
+            <p><strong>Кабинет:</strong> {{ device.cabinet.number }}</p>
+            <p><strong>Корпус:</strong> {{ device.cabinet.building }}</p>
+            <p><strong>Дата покупки:</strong> {{ device.purchase_date|date:"d.m.Y" }}</p>
+            <p><strong>Стоимость:</strong> {{ device.cost }} ₽</p>
+        </div>
+    </div>
+
+    <h3 class="mb-3">История заявок</h3>
+
+    {% if service_requests %}
+        {% for request in service_requests %}
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <strong>Заявка #{{ request.id }}</strong> — {{ request.status }}
+                </div>
+                <div class="card-body">
+                    <p><strong>Описание:</strong> {{ request.description }}</p>
+                    <p><strong>Создана:</strong> {{ request.created_at|date:"d.m.Y H:i" }}</p>
+                    <p><strong>Инженер:</strong> {{ request.assigned_engineer.get_full_name|default:"—" }}</p>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info">
+            Для этого устройства пока нет заявок.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

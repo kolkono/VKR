@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Устройства в {{ cabinet.building }} — аудитория {{ cabinet.number }}</h2>
+
+    {% if devices %}
+        <div class="row">
+            {% for device in devices %}
+                <div class="col-md-4 mb-4">
+                    <a href="/dashboard/admin/devices/{{ device.id }}/" class="text-decoration-none">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ device.name }}</h5>
+                                <p class="mb-1 text-muted">ID: {{ device.id }}</p>
+                                <p class="mb-1"><strong>Кабинет:</strong> {{ cabinet.number }}</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            В этой аудитории нет устройств.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

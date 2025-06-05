@@ -3,12 +3,11 @@
 {% block title %}Детали заявки №{{ service_request.id }}{% endblock %}
 
 {% block content %}
-  <p>ТЕСТ: Шаблон admin_request_detail.html загружается!</p>
-
   <h2>Заявка №{{ service_request.id }}</h2>
 
   <p><strong>Устройство:</strong> {{ service_request.device.name }} ({{ service_request.device.serial_number }})</p>
-  <p><strong>Статус заявки:</strong> {% if service_request.is_completed %}Завершена{% else %}В работе{% endif %}</p>
+  <p><strong>Кабинет:</strong> {{ service_request.device.cabinet }}</p>
+  <p><strong>Статус заявки:</strong> {{ service_request.status }}</p>
 
   <hr>
 
@@ -18,9 +17,7 @@
       {% for log in logs %}
         <li>
           <strong>{{ log.action_type }}</strong><br>
-          {% if log.notes %}
-            Примечание: {{ log.notes }}<br>
-          {% endif %}
+          {% if log.notes %}Примечание: {{ log.notes }}<br>{% endif %}
           <small>Дата: {{ log.action_date|date:"d.m.Y H:i" }}, Инженер: {{ log.engineer.username }}</small>
         </li>
       {% endfor %}
@@ -34,20 +31,23 @@
     <h3>Запрос на замену устройства №{{ replacement_request.id }}</h3>
     <p><strong>Инженер:</strong> {{ replacement_request.engineer.username }}</p>
     <p><strong>Причина замены:</strong> {{ replacement_request.reason|linebreaks }}</p>
-    <p><strong>Статус одобрения:</strong> {% if replacement_request.admin_approved %}Одобрен{% else %}Ожидает одобрения{% endif %}</p>
+    <p><strong>Статус одобрения:</strong> {% if replacement_request.admin_approved %}✅ Одобрен{% else %}⌛ Ожидает одобрения{% endif %}</p>
 
     {% if replacement_report %}
       <hr>
-      <h4>Отчёт по замене</h4>
-      <p><strong>Дата создания:</strong> {{ replacement_report.created_at|date:"d.m.Y H:i" }}</p>
-      <p><strong>Создатель:</strong> {{ replacement_report.created_by.username }}</p>
-      <p><strong>Описание:</strong> {{ replacement_report.notes|linebreaks }}</p>
+      <h4>Отчёт по перемещению устройства</h4>
+      <p><strong>Дата:</strong> {{ replacement_report.created_at|date:"d.m.Y H:i" }}</p>
+      <p><strong>Инженер:</strong> {{ replacement_report.created_by.username }}</p>
+      <p><strong>Устройство:</strong> {{ replacement_report.device.name }} ({{ replacement_report.device.serial_number }})</p>
+      <p><strong>Из кабинета:</strong> {{ replacement_report.from_cabinet }}</p>
+      <p><strong>В кабинет:</strong> {{ replacement_report.to_cabinet }}</p>
+      <p><strong>Примечания:</strong> {{ replacement_report.notes|linebreaks }}</p>
     {% else %}
       <p>Отчёт по замене ещё не добавлен.</p>
     {% endif %}
   {% endif %}
 
-  <div class="action-buttons">
+  <div class="action-buttons" style="margin-top: 20px;">
     <a href="{% url 'admin_dashboard' %}" class="btn">← Назад в панель администратора</a>
   </div>
 {% endblock %}

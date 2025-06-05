@@ -25,11 +25,22 @@ urlpatterns = [
 
     # Админка — единый префикс /dashboard/admin/
     path('dashboard/admin/', views.admin_dashboard, name='admin_dashboard'),
-    path('dashboard/admin/replacement/<int:replacement_id>/', views.replacement_request_detail, name='replacement_request_detail'),
     path('dashboard/admin/request/<int:request_id>/', views.admin_request_detail, name='admin_request_detail'),
     path('dashboard/admin/replacement-requests/', views.admin_replacement_requests, name='admin_replacement_requests'),
     path('dashboard/admin/replacement-requests/<int:request_id>/approve/', views.admin_approve_replacement, name='admin_approve_replacement'),
     path('dashboard/admin/replacement-requests/<int:request_id>/reject/', views.admin_reject_replacement, name='admin_reject_replacement'),
+    path('dashboard/admin/cabinets/', views.admin_cabinet_buildings, name='admin_cabinet_buildings'),
+    path('dashboard/admin/cabinets/<str:building>/', views.admin_cabinets_by_building, name='admin_cabinets_by_building'),
+    path('dashboard/admin/cabinets/<str:building>/<str:number>/', views.admin_cabinet_devices, name='admin_cabinet_devices'),
+    path('dashboard/admin/devices/<int:device_id>/', views.device_detail, name='device_detail'),
+    path('dashboard/admin/', views.admin_dashboard, name='admin_dashboard'),
+    path('dashboard/admin/replacement/<int:request_id>/', views.admin_request_detail, name='replacement_request_detail'),
+
+
+    
+
+
+
 
     # Новые маршруты для активных и завершённых заявок админа
     path('dashboard/admin/active/', views.admin_active_requests, name='admin_active_requests'),

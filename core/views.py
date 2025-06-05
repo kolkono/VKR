@@ -9,6 +9,9 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q
+from django.utils.dateparse import parse_date
+from django import forms
+from .models import DeviceReplacementReport
 
 
 
@@ -131,20 +134,17 @@ def assign_request_to_self(request, request_id):
 @login_required
 @engineer_required
 def engineer_request_detail(request, request_id):
-    # Получаем заявку без ограничения по assigned_engineer
     service_request = get_object_or_404(ServiceRequest, id=request_id)
     replacement_request = ReplacementRequest.objects.filter(service_request=service_request).first()
 
-    # Если заявка приостановлена, блокируем действия инженера
     if service_request.is_paused:
         logs = service_request.service_logs.select_related('engineer').order_by('-action_date')
-        context = {
+        return render(request, 'core/engineer/engineer_request_detail.html', {
             'request': service_request,
             'logs': logs,
             'replacement_request': replacement_request,
             'paused_message': "Заявка приостановлена и ожидает одобрения администратора.",
-        }
-        return render(request, 'core/engineer/engineer_request_detail.html', context)
+        })
 
     if request.method == 'POST':
         form_log = ServiceLogForm(request.POST)
@@ -155,13 +155,11 @@ def engineer_request_detail(request, request_id):
             log.engineer = request.user
             log.save()
 
-            # Завершение заявки
             if form_log.cleaned_data.get('complete_request'):
                 service_request.is_completed = True
                 service_request.is_paused = False
                 service_request.save()
 
-            # Запрос на замену устройства
             if form_log.cleaned_data.get('replacement_request'):
                 if not replacement_request:
                     replacement_request = ReplacementRequest.objects.create(
@@ -181,7 +179,6 @@ def engineer_request_detail(request, request_id):
 
             return redirect('engineer_request_detail', request_id=request_id)
 
-        # Сохранение отчёта по замене
         elif 'replacement_report' in request.POST and replacement_request and replacement_request.admin_approved:
             form_report = DeviceReplacementReportForm(request.POST)
             if form_report.is_valid():
@@ -190,23 +187,30 @@ def engineer_request_detail(request, request_id):
                     for field, value in form_report.cleaned_data.items():
                         setattr(report, field, value)
                     report.created_by = request.user
+                    report.device = service_request.device
                     report.save()
                 except DeviceReplacementReport.DoesNotExist:
                     report = form_report.save(commit=False)
                     report.replacement_request = replacement_request
                     report.created_by = request.user
+                    report.device = service_request.device
                     report.save()
 
+                # Обновляем местоположение устройства
+                report.device.cabinet = report.to_cabinet
+                report.device.save()
+
+                # Завершаем заявку
                 service_request.is_completed = True
                 service_request.is_paused = False
                 service_request.save()
 
-                messages.success(request, 'Отчёт по замене успешно сохранён и заявка закрыта.')
+                messages.success(request, 'Отчёт по перемещению успешно сохранён и заявка закрыта.')
                 return redirect('engineer_request_detail', request_id=request_id)
+
     else:
         form_log = ServiceLogForm()
         form_report = None
-
         if replacement_request and replacement_request.admin_approved:
             try:
                 report_instance = replacement_request.devicereplacementreport
@@ -216,15 +220,13 @@ def engineer_request_detail(request, request_id):
 
     logs = service_request.service_logs.select_related('engineer').order_by('-action_date')
 
-    context = {
+    return render(request, 'core/engineer/engineer_request_detail.html', {
         'request': service_request,
         'form_log': form_log,
         'form_report': form_report,
         'logs': logs,
         'replacement_request': replacement_request,
-    }
-
-    return render(request, 'core/engineer/engineer_request_detail.html', context)
+    })
 
 
 
@@ -253,66 +255,8 @@ def admin_dashboard(request):
     })
 
 
-@login_required
-@admin_required
-def replacement_request_detail(request, replacement_id):
-    # Получаем запрос на замену, который ещё не одобрен админом
-    replacement_request = get_object_or_404(ReplacementRequest, id=replacement_id)
 
-    service_request = replacement_request.service_request
 
-    # Получаем логи по связанной сервисной заявке
-    logs = ServiceLog.objects.filter(request=service_request).order_by('-action_date')
-
-    # Получаем отчёт по замене, если есть
-    try:
-        report_instance = DeviceReplacementReport.objects.get(replacement_request=replacement_request)
-    except DeviceReplacementReport.DoesNotExist:
-        report_instance = None
-
-    if request.method == 'POST':
-        form = DeviceReplacementReportForm(request.POST, instance=report_instance)
-        if form.is_valid():
-            report = form.save(commit=False)
-            report.replacement_request = replacement_request
-            report.created_by = request.user
-            report.save()
-
-            # Добавляем запись в журнал сервиса
-            ServiceLog.objects.create(
-                request=service_request,
-                engineer=request.user,
-                action_type="Замена подтверждена",
-                notes=(
-                    f"Администратор {request.user.username} подтвердил замену. "
-                    f"Новое устройство: {report.new_device_name}, "
-                    f"Серийный номер: {report.new_device_serial_number}, "
-                    f"Стоимость: {report.new_device_cost}."
-                )
-            )
-
-            # Помечаем запрос как одобренный
-            replacement_request.admin_approved = True
-            replacement_request.save()
-
-            # Обновляем состояние сервисной заявки
-            service_request.requires_replacement = False
-            service_request.is_paused = False
-            service_request.save()
-
-            messages.success(request, f'Запрос замены №{replacement_request.id} успешно подтвержден.')
-            return redirect('admin_dashboard')
-    else:
-        form = DeviceReplacementReportForm(instance=report_instance)
-
-    return render(request, 'core/admin/replacement_request.html', {
-        'replacement_request': replacement_request,
-        'service_request': service_request,
-        'form': form,
-        'logs': logs,
-    })
-
-from django.utils.dateparse import parse_date
 
 @login_required
 @admin_required
@@ -678,3 +622,49 @@ def assign_request_from_all(request, request_id):
     service_request.save()
     messages.success(request, f'Вы взяли заявку #{service_request.id} в работу.')
     return redirect('all_active_requests')
+
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_cabinet_buildings(request):
+    buildings = Cabinet.objects.values_list('building', flat=True).distinct()
+    return render(request, 'core/admin/cabinet_buildings.html', {'buildings': buildings})
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_cabinets_by_building(request, building):
+    cabinets = Cabinet.objects.filter(building=building).order_by('number')
+    return render(request, 'core/admin/cabinets_list.html', {
+        'building': building,
+        'cabinets': cabinets
+    })
+
+@login_required
+@user_passes_test(lambda u: u.role == 'admin')
+def device_detail(request, device_id):
+    device = get_object_or_404(Device.objects.select_related('cabinet'), pk=device_id)
+    service_requests = (
+        ServiceRequest.objects
+        .filter(device=device)
+        .select_related('assigned_engineer')
+        .prefetch_related('service_logs')
+        .order_by('-created_at')
+    )
+    return render(request, 'core/admin/device_detail.html', {
+        'device': device,
+        'service_requests': service_requests
+    })
+
+@login_required
+@user_passes_test(lambda u: u.role == 'admin')
+def admin_cabinet_devices(request, building, number):
+    cabinet = get_object_or_404(Cabinet, building=building, number=number)
+    devices = Device.objects.filter(cabinet=cabinet).order_by('name')
+
+    return render(request, 'core/admin/cabinet_devices.html', {
+        'cabinet': cabinet,
+        'devices': devices
+    })
+
