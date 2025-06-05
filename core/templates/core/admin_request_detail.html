@@ -3,19 +3,12 @@
 {% block title %}Детали заявки №{{ service_request.id }}{% endblock %}
 
 {% block content %}
-<p>ТЕСТ: Шаблон обновлён!</p>
-
+  <p>ТЕСТ: Шаблон admin_request_detail.html загружается!</p>
 
   <h2>Заявка №{{ service_request.id }}</h2>
 
   <p><strong>Устройство:</strong> {{ service_request.device.name }} ({{ service_request.device.serial_number }})</p>
-  <p><strong>Статус заявки:</strong> 
-    {% if service_request.is_completed %}
-      Завершена
-    {% else %}
-      В работе
-    {% endif %}
-  </p>
+  <p><strong>Статус заявки:</strong> {% if service_request.is_completed %}Завершена{% else %}В работе{% endif %}</p>
 
   <hr>
 
@@ -41,39 +34,20 @@
     <h3>Запрос на замену устройства №{{ replacement_request.id }}</h3>
     <p><strong>Инженер:</strong> {{ replacement_request.engineer.username }}</p>
     <p><strong>Причина замены:</strong> {{ replacement_request.reason|linebreaks }}</p>
-    <p><strong>Статус одобрения:</strong> 
-      {% if replacement_request.admin_approved %}
-        Одобрен
-      {% else %}
-        Ожидает одобрения
-      {% endif %}
-    </p>
+    <p><strong>Статус одобрения:</strong> {% if replacement_request.admin_approved %}Одобрен{% else %}Ожидает одобрения{% endif %}</p>
 
     {% if replacement_report %}
       <hr>
       <h4>Отчёт по замене</h4>
       <p><strong>Дата создания:</strong> {{ replacement_report.created_at|date:"d.m.Y H:i" }}</p>
       <p><strong>Создатель:</strong> {{ replacement_report.created_by.username }}</p>
-      <p><strong>Описание:</strong> {{ replacement_report.description|linebreaks }}</p>
+      <p><strong>Описание:</strong> {{ replacement_report.notes|linebreaks }}</p>
     {% else %}
-      {% if not service_request.is_completed %}
-        <p>Отчёт по замене ещё не добавлен.</p>
-        {# Здесь можно добавить форму для создания отчёта, если она есть #}
-      {% else %}
-        <p>Отчёт по замене не добавлен.</p>
-      {% endif %}
+      <p>Отчёт по замене ещё не добавлен.</p>
     {% endif %}
   {% endif %}
 
-  {% if not service_request.is_completed %}
-    <div class="action-buttons">
-      {# Например, кнопки редактирования или отправки формы #}
-      <a href="{% url 'admin_dashboard' %}" class="btn">← Назад в панель администратора</a>
-      {# Можно добавить дополнительные кнопки здесь #}
-    </div>
-  {% else %}
-    <div class="action-buttons">
-      <a href="{% url 'admin_dashboard' %}" class="btn">← Назад в панель администратора</a>
-    </div>
-  {% endif %}
+  <div class="action-buttons">
+    <a href="{% url 'admin_dashboard' %}" class="btn">← Назад в панель администратора</a>
+  </div>
 {% endblock %}

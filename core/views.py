@@ -131,7 +131,8 @@ def assign_request_to_self(request, request_id):
 @login_required
 @engineer_required
 def engineer_request_detail(request, request_id):
-    service_request = get_object_or_404(ServiceRequest, id=request_id, assigned_engineer=request.user)
+    # Получаем заявку без ограничения по assigned_engineer
+    service_request = get_object_or_404(ServiceRequest, id=request_id)
     replacement_request = ReplacementRequest.objects.filter(service_request=service_request).first()
 
     # Если заявка приостановлена, блокируем действия инженера
@@ -185,14 +186,12 @@ def engineer_request_detail(request, request_id):
             form_report = DeviceReplacementReportForm(request.POST)
             if form_report.is_valid():
                 try:
-                    # Пытаемся получить существующий отчёт для обновления
                     report = DeviceReplacementReport.objects.get(replacement_request=replacement_request)
                     for field, value in form_report.cleaned_data.items():
                         setattr(report, field, value)
-                    report.created_by = request.user  # Обновляем создателя, если нужно
+                    report.created_by = request.user
                     report.save()
                 except DeviceReplacementReport.DoesNotExist:
-                    # Создаем новый отчёт, если не существует
                     report = form_report.save(commit=False)
                     report.replacement_request = replacement_request
                     report.created_by = request.user
@@ -406,10 +405,11 @@ def admin_completed_requests(request):
 @login_required
 @admin_required
 def admin_request_detail(request, request_id):
+    print(f"admin_request_detail вызван для request_id={request_id}")  # отладка
+
     service_request = get_object_or_404(ServiceRequest, id=request_id)
 
     logs = service_request.service_logs.select_related('engineer').order_by('-action_date')
-
     replacement_request = ReplacementRequest.objects.filter(service_request=service_request).first()
 
     report = None
@@ -426,6 +426,9 @@ def admin_request_detail(request, request_id):
         'replacement_report': report,
     }
     return render(request, 'core/admin_request_detail.html', context)
+
+
+
 
 
 

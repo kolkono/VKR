@@ -2,25 +2,6 @@
 {% block title %}Все активные заявки{% endblock %}
 
 {% block content %}
-  <!-- Вкладки -->
-  <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-    <a href="{% url 'all_active_requests' %}"
-       style="padding: 8px 16px; text-decoration: none; border: 1px solid #ccc; border-radius: 4px;
-              {% if request.resolver_match.url_name == 'all_active_requests' %}background-color: #007acc; color: white;{% else %}background-color: #f2f2f2; color: #333;{% endif %}">
-      Все заявки
-    </a>
-    <a href="{% url 'my_active_requests' %}"
-       style="padding: 8px 16px; text-decoration: none; border: 1px solid #ccc; border-radius: 4px;
-              {% if request.resolver_match.url_name == 'my_active_requests' %}background-color: #007acc; color: white;{% else %}background-color: #f2f2f2; color: #333;{% endif %}">
-      Мои заявки
-    </a>
-    <a href="{% url 'completed_requests' %}"
-       style="padding: 8px 16px; text-decoration: none; border: 1px solid #ccc; border-radius: 4px;
-              {% if request.resolver_match.url_name == 'completed_requests' %}background-color: #007acc; color: white;{% else %}background-color: #f2f2f2; color: #333;{% endif %}">
-      Завершённые заявки
-    </a>
-  </div>
-
   <h2>Все активные заявки</h2>
 
   <form method="get" style="margin-bottom: 20px;">
